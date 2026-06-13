@@ -1,10 +1,13 @@
 'use client';
 
+import { Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { DebtForm } from "@/components/forms/debt-form";
+import { PageHeader } from "@/components/page-header";
 import { useCreateDebt } from "@/hooks/use-debts";
+import type { DebtInput } from "@/lib/validation";
 
-export default function NewDebtPage() {
+function NewDebtPageContent() {
   const params = useSearchParams();
   const router = useRouter();
   const defaultType =
@@ -12,20 +15,14 @@ export default function NewDebtPage() {
 
   const createMutation = useCreateDebt();
 
-  const handleSubmit = async (values: {
-    partnerName: string;
-    amount: number;
-    type: "borrowed" | "lent";
-    status?: "unpaid" | "paid";
-  }) => {
+  const handleSubmit = async (values: DebtInput) => {
     await createMutation.mutateAsync(values);
     router.replace("/home");
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 px-5 pb-24 pt-6">
-      <h1 className="text-xl font-semibold text-slate-900">新しい記録</h1>
-      <p className="text-sm text-slate-500">3ステップでサッと登録</p>
+    <div className="h-full overflow-y-auto bg-slate-50 px-5 pb-24 pt-6">
+      <PageHeader title="新しい記録"/>
 
       <div className="mt-4 rounded-2xl bg-white p-4 shadow-sm">
         <DebtForm
@@ -36,5 +33,19 @@ export default function NewDebtPage() {
         />
       </div>
     </div>
+  );
+}
+
+export default function NewDebtPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex h-full items-center justify-center bg-slate-50 px-5 text-sm text-slate-500">
+          読み込み中...
+        </div>
+      }
+    >
+      <NewDebtPageContent />
+    </Suspense>
   );
 }

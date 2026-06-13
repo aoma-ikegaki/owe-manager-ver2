@@ -1,22 +1,28 @@
 'use client';
 
+import { useState } from "react";
 import { DebtCard } from "@/components/debt-card";
+import { TabSwitcher } from "@/components/tab-switcher";
 import { useDebts } from "@/hooks/use-debts";
 
 export default function HistoryPage() {
-  const { data, isLoading } = useDebts({ status: "paid" });
+  const [tab, setTab] = useState<"borrowed" | "lent">("borrowed");
+  const { data, isLoading } = useDebts({ type: tab, status: "paid" });
   const items = data?.items ?? [];
 
   return (
-    <div className="min-h-screen bg-slate-50 px-5 pb-24 pt-6">
-      <h1 className="text-xl font-semibold text-slate-900">返済済み一覧</h1>
-      <p className="mt-1 text-sm text-slate-500">
-        返済済みの記録を確認できます
-      </p>
+    <div className="h-full overflow-y-auto bg-slate-50 px-5 pb-24 pt-6">
+      <div className="text-center">
+        <h1 className="text-xl font-semibold text-slate-900">履歴</h1>
+      </div>
+
+      <div className="mt-4 space-y-2">
+        <TabSwitcher value={tab} onChange={setTab} />
+      </div>
 
       <div className="mt-4 space-y-3">
         {isLoading && (
-          <p className="text-sm text-slate-500">読み込み中...</p>
+          <p className="text-center text-sm text-slate-500">読み込み中...</p>
         )}
         {!isLoading &&
           items.map((debt) => (
@@ -31,8 +37,8 @@ export default function HistoryPage() {
             />
           ))}
         {!isLoading && items.length === 0 && (
-          <p className="text-sm text-slate-500">
-            返済済みの記録はまだありません
+          <p className="text-center text-sm text-slate-500">
+            返済済みの{tab === "borrowed" ? "借金" : "貸付"}はまだありません
           </p>
         )}
       </div>

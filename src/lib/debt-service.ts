@@ -1,6 +1,7 @@
 import { and, count, desc, eq, sum } from "drizzle-orm";
 import { db } from "@/db/client";
 import { debts, debtStatusEnum, debtTypeEnum } from "@/db/schema";
+import { parseDateInput } from "./date-utils";
 import type { DebtInput, DebtQuery } from "./validation";
 
 export async function listDebts(userId: string, query: DebtQuery = {}) {
@@ -33,6 +34,7 @@ export async function createDebt(userId: string, input: DebtInput) {
       amount: input.amount,
       type: input.type,
       status: input.status ?? "unpaid",
+      createdAt: parseDateInput(input.occurredOn),
     })
     .returning();
   return record;
@@ -50,6 +52,9 @@ export async function updateDebt(
   if (input.amount !== undefined) updates.amount = input.amount;
   if (input.type !== undefined) updates.type = input.type;
   if (input.status !== undefined) updates.status = input.status;
+  if (input.occurredOn !== undefined) {
+    updates.createdAt = parseDateInput(input.occurredOn);
+  }
 
   const [updated] = await db
     .update(debts)

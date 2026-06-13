@@ -1,5 +1,5 @@
 import { z } from "zod";
-
+import { isDateInputValid } from "./date-utils";
 export const debtInputSchema = z.object({
   partnerName: z
     .string()
@@ -11,6 +11,10 @@ export const debtInputSchema = z.object({
     .min(1, "1円以上を入力してください")
     .max(1_000_000, "100万円以下で入力してください"),
   type: z.enum(["borrowed", "lent"]),
+  occurredOn: z
+    .string()
+    .min(1, "日付を選択してください")
+    .refine(isDateInputValid, "有効な日付を入力してください（未来の日付は不可）"),
   status: z.enum(["unpaid", "paid"]).optional(),
 });
 

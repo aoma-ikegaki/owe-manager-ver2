@@ -15,15 +15,14 @@ export function SummaryCard({
 }: SummaryCardProps) {
   const isBorrowed = variant === "borrowed";
   const color = isBorrowed ? "text-red-600" : "text-[var(--color-brand)]";
-  const bg = isBorrowed ? "bg-red-50" : "bg-emerald-50";
 
   return (
-    <div className={`rounded-2xl ${bg} p-4 shadow-sm`}>
+    <div className="rounded-2xl border border-slate-200 bg-white p-3 text-center">
       <p className="text-sm font-medium text-slate-600">{title}</p>
-      <p className={`mt-1 text-2xl font-semibold ${color}`}>
+      <p className={`mt-0.5 text-2xl font-semibold ${color}`}>
         ￥{formatter.format(amount)}
       </p>
-      <p className="mt-1 text-xs text-slate-500">
+      <p className="mt-0.5 text-xs text-slate-500">
         未{isBorrowed ? "返済" : "回収"} {count}件
       </p>
     </div>

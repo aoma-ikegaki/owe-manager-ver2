@@ -1,10 +1,27 @@
 'use client';
 
-import { useMemo } from "react";
+import { useMemo, type ReactNode } from "react";
 import { useRouter, useParams } from "next/navigation";
-import { CheckCircle2, RotateCcw, Trash } from "lucide-react";
+import { Trash } from "lucide-react";
 import { format } from "date-fns";
+import clsx from "clsx";
+import { BackButton } from "@/components/back-button";
 import { useDebt, useDeleteDebt, useUpdateDebt } from "@/hooks/use-debts";
+
+function DetailRow({
+  label,
+  children,
+}: {
+  label: string;
+  children: ReactNode;
+}) {
+  return (
+    <div className="flex items-center justify-between px-4 py-4">
+      <span className="text-base text-slate-500">{label}</span>
+      <div className="text-base font-medium text-slate-900">{children}</div>
+    </div>
+  );
+}
 
 export default function DebtDetailPage() {
   const params = useParams<{ id: string }>();
@@ -36,8 +53,9 @@ export default function DebtDetailPage() {
 
   if (isLoading || !data) {
     return (
-      <div className="min-h-screen bg-slate-50 px-5 pb-24 pt-6">
-        <p className="text-sm text-slate-500">読み込み中...</p>
+      <div className="h-full overflow-y-auto bg-slate-50 px-5 pb-24 pt-6">
+        <BackButton />
+        <p className="mt-4 text-center text-base text-slate-500">読み込み中...</p>
       </div>
     );
   }
@@ -45,85 +63,71 @@ export default function DebtDetailPage() {
   const isBorrowed = data.type === "borrowed";
 
   return (
-    <div className="min-h-screen bg-slate-50 px-5 pb-24 pt-6">
-      <button
-        type="button"
-        onClick={() => router.back()}
-        className="text-sm font-semibold text-[var(--color-brand)]"
-      >
-        戻る
-      </button>
+    <div className="flex h-full min-h-0 flex-col overflow-y-auto bg-slate-50 px-5 pb-24 pt-6">
+      <BackButton />
 
-      <div className="mt-4 rounded-3xl bg-white p-5 shadow-sm">
-        <div className="flex items-center gap-3">
-          <div className="flex h-12 w-12 items-center justify-center rounded-full bg-slate-100 text-lg font-bold text-slate-600">
-            {data.partnerName.at(0)}
-          </div>
-          <div>
-            <p className="text-sm text-slate-500">
-              {isBorrowed ? "借りた" : "貸した"}
-            </p>
-            <h1 className="text-xl font-semibold text-slate-900">
-              {data.partnerName}
-            </h1>
-          </div>
-        </div>
+      <div className="mt-10 text-center">
+        <h1 className="text-3xl font-bold text-slate-900">{data.partnerName}</h1>
+        <span className="mt-2 inline-flex rounded-full bg-emerald-50 px-3 py-1 text-sm font-semibold text-[var(--color-brand)]">
+          {isBorrowed ? "借りた" : "貸した"}
+        </span>
+        <p className="mt-6 text-5xl font-bold text-slate-900">
+          ￥{data.amount.toLocaleString("ja-JP")}
+        </p>
+      </div>
 
-        <div className="mt-6 space-y-2">
-          <p className="text-3xl font-bold text-slate-900">
-            ￥{data.amount.toLocaleString("ja-JP")}
-          </p>
-          <p className="text-sm text-slate-500">
-            借りた日:{" "}
-            {data.createdAt
-              ? format(new Date(data.createdAt), "yyyy/MM/dd")
-              : "-"}
-          </p>
-          <p className="text-sm text-slate-500">
-            ステータス: {statusLabel}
-          </p>
-        </div>
-
-        <div className="mt-8 space-y-3">
-          <button
-            type="button"
-            onClick={handleToggleStatus}
-            className={`flex w-full items-center justify-center gap-2 rounded-xl px-4 py-3 text-base font-semibold text-white shadow-md transition ${
+      <div className="mt-8 divide-y divide-slate-100 rounded-2xl bg-white shadow-sm">
+        <DetailRow label={isBorrowed ? "借りた日" : "貸した日"}>
+          {data.createdAt
+            ? format(new Date(data.createdAt), "yyyy/MM/dd")
+            : "-"}
+        </DetailRow>
+        <DetailRow label="ステータス">
+          <span
+            className={clsx(
+              "inline-flex rounded-full px-3 py-1 text-sm font-semibold",
               data.status === "paid"
-                ? "bg-slate-700 hover:bg-slate-800"
-                : "bg-[var(--color-brand)] hover:bg-[var(--color-brand-strong)]"
-            }`}
-          >
-            {data.status === "paid" ? (
-              <>
-                <RotateCcw className="h-5 w-5" />
-                未返済に戻す
-              </>
-            ) : (
-              <>
-                <CheckCircle2 className="h-5 w-5" />
-                返済済みにする
-              </>
+                ? "bg-slate-100 text-slate-600"
+                : "bg-[var(--color-brand)] text-white",
             )}
-          </button>
-
-          <button
-            type="button"
-            onClick={() => router.push(`/debts/${data.id}/edit`)}
-            className="w-full rounded-xl border border-slate-200 px-4 py-3 text-base font-semibold text-slate-800 transition hover:bg-slate-50"
           >
-            編集する
-          </button>
+            {statusLabel}
+          </span>
+        </DetailRow>
+      </div>
 
-          <button
-            type="button"
-            onClick={handleDelete}
-            className="flex w-full items-center justify-center gap-2 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-base font-semibold text-red-700 transition hover:bg-red-100"
-          >
-            <Trash className="h-5 w-5" />
-            削除する
-          </button>
-        </div>
+      <div className="mt-auto space-y-3 pt-8">
+        <button
+          type="button"
+          onClick={handleToggleStatus}
+          disabled={updateMutation.isPending}
+          className={clsx(
+            "flex w-full items-center justify-center rounded-xl px-4 py-3 text-base font-semibold text-white shadow-md transition disabled:opacity-60",
+            data.status === "paid"
+              ? "bg-slate-700 hover:bg-slate-800"
+              : "bg-[var(--color-brand)] hover:bg-[var(--color-brand-strong)]",
+          )}
+        >
+          {data.status === "paid" ? "未返済に戻す" : "返済済みにする"}
+        </button>
+
+        <button
+          type="button"
+          onClick={() => router.push(`/debts/${data.id}/edit`)}
+          className="flex w-full items-center justify-center rounded-xl border border-slate-200 px-4 py-3 text-base font-semibold text-slate-800 transition hover:bg-slate-50"
+        >
+          編集する
+        </button>
+
+        <button
+          type="button"
+          onClick={handleDelete}
+          disabled={deleteMutation.isPending}
+          className="flex w-full items-center justify-center gap-2 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-base font-semibold text-red-700 transition hover:bg-red-100 disabled:opacity-60"
+        >
+          <Trash className="h-5 w-5" />
+          削除する
+        </button>
       </div>
     </div>
   );

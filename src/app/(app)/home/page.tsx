@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { DebtCard } from "@/components/debt-card";
+import { DefaultUserAvatar } from "@/components/default-user-avatar";
 import { Fab } from "@/components/fab";
 import { SummaryCard } from "@/components/summary-card";
 import { TabSwitcher } from "@/components/tab-switcher";
@@ -24,17 +25,15 @@ export default function HomePage() {
   const items = data?.items ?? [];
 
   return (
-    <div className="relative min-h-screen bg-slate-50">
-      <header className="bg-white px-5 pb-5 pt-6 shadow-sm">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-semibold text-[var(--color-brand)]">
-              OweManager
-            </h1>
-          </div>
-          <div className="h-10 w-10 rounded-full bg-emerald-100" />
+    <div className="flex h-full min-h-0 flex-col overflow-hidden bg-slate-50">
+      <header className="shrink-0 bg-white px-5 pb-3 pt-4 shadow-sm">
+        <div className="relative flex items-center justify-center">
+          <h1 className="text-2xl font-semibold text-slate-900">
+            OweManager
+          </h1>
+          <DefaultUserAvatar className="absolute right-0 flex h-9 w-9 items-center justify-center rounded-full bg-slate-100" />
         </div>
-        <div className="mt-4 grid grid-cols-2 gap-3">
+        <div className="mt-2 grid grid-cols-2 gap-2">
           <SummaryCard
             title="借りた"
             amount={summaries.borrowed.unpaidAmount}
@@ -50,22 +49,14 @@ export default function HomePage() {
         </div>
       </header>
 
-      <main className="space-y-4 px-5 pb-28 pt-4">
-        <section className="flex items-center justify-between">
-          <div>
-            <p className="text-sm font-semibold text-slate-900">
-              未返済の{tab === "borrowed" ? "借金" : "貸付"}
-            </p>
-            <p className="text-xs text-slate-500">
-              タップで詳細・返済操作ができます
-            </p>
-          </div>
-          <TabSwitcher value={tab} onChange={setTab} />
-        </section>
+      <div className="shrink-0 space-y-2 px-5 pt-2">
+        <TabSwitcher value={tab} onChange={setTab} />
+      </div>
 
+      <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 pb-28 pt-2">
         <div className="space-y-3">
           {isLoading && (
-            <p className="text-center text-sm text-slate-500">読み込み中...</p>
+            <p className="text-center text-base text-slate-500">読み込み中...</p>
           )}
           {!isLoading &&
             items.map((debt) => (
@@ -80,12 +71,12 @@ export default function HomePage() {
               />
             ))}
           {!isLoading && items.length === 0 && (
-            <p className="text-center text-sm text-slate-500">
+            <p className="text-center text-base text-slate-500">
               まだ{tab === "borrowed" ? "借りた" : "貸した"}記録がありません
             </p>
           )}
         </div>
-      </main>
+      </div>
 
       <Fab href={`/debts/new?type=${tab}`} />
     </div>

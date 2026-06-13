@@ -6,8 +6,8 @@ export default function SettingsPage() {
   const { data } = useSession();
 
   return (
-    <div className="min-h-screen bg-slate-50 px-5 pb-24 pt-6">
-      <h1 className="text-xl font-semibold text-slate-900">設定</h1>
+    <div className="h-full overflow-y-auto bg-slate-50 px-5 pb-24 pt-6">
+      <h1 className="text-center text-xl font-semibold text-slate-900">設定</h1>
       <div className="mt-4 rounded-2xl bg-white p-2 shadow-sm">
         <div className="rounded-xl px-3 py-3">
           <p className="text-sm font-semibold text-slate-900">
@@ -25,7 +25,7 @@ export default function SettingsPage() {
       >
         ログアウト
       </button>
-      <p className="mt-6 text-xs text-slate-500">App version 1.0.0</p>
+      <p className="mt-6 text-center text-xs text-slate-500">App version 1.0.0</p>
     </div>
   );
 }
