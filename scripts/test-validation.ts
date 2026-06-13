@@ -1,7 +1,7 @@
-import { format } from "date-fns";
 import { debtInputSchema, debtQuerySchema } from "../src/lib/validation";
+import { todayInAppTimeZone } from "../src/lib/date-utils";
 
-const today = format(new Date(), "yyyy-MM-dd");
+const today = todayInAppTimeZone();
 
 const inputCases: Array<{ label: string; data: unknown; ok: boolean }> = [
   {
