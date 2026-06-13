@@ -2,13 +2,16 @@
 
 import { Suspense, useMemo, useState, type ReactNode } from "react";
 import { useRouter, useParams, useSearchParams } from "next/navigation";
-import { Trash } from "lucide-react";
+import { Trash, Check } from "lucide-react";
 import { format } from "date-fns";
 import clsx from "clsx";
 import { BackButton } from "@/components/back-button";
 import { useDebt, useDeleteDebt, useUpdateDebt } from "@/hooks/use-debts";
 import { DebtDetailSkeleton } from "@/components/ui/loading-skeleton";
 import { ConfirmBottomSheet } from "@/components/ui/confirm-bottom-sheet";
+
+const CHECK_FEEDBACK_MS = 320;
+const COMPLETION_HOLD_MS = 360;
 
 function DetailRow({
   label,
@@ -35,23 +38,32 @@ function DebtDetailPageContent() {
   const updateMutation = useUpdateDebt(id);
   const deleteMutation = useDeleteDebt(id);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [paidFeedbackActive, setPaidFeedbackActive] = useState(false);
 
+  const showPaidState = paidFeedbackActive || data?.status === "paid";
   const statusLabel = useMemo(
-    () => (data?.status === "paid" ? "返済済み" : "未返済"),
-    [data?.status],
+    () => (showPaidState ? "返済済み" : "未返済"),
+    [showPaidState],
   );
 
   const handleToggleStatus = () => {
-    if (!data) return;
+    if (!data || paidFeedbackActive) return;
 
     const markingUnpaid = data.status === "paid";
-    if (markingUnpaid && fromHistory) {
-      router.replace("/history");
+
+    if (markingUnpaid) {
+      if (fromHistory) {
+        router.replace("/history");
+      }
+      updateMutation.mutate({ status: "unpaid" });
+      return;
     }
 
-    updateMutation.mutate({
-      status: markingUnpaid ? "unpaid" : "paid",
-    });
+    setPaidFeedbackActive(true);
+    window.setTimeout(() => {
+      router.replace("/home");
+      updateMutation.mutate({ status: "paid" });
+    }, CHECK_FEEDBACK_MS + COMPLETION_HOLD_MS);
   };
 
   const handleConfirmDelete = () => {
@@ -86,7 +98,12 @@ function DebtDetailPageContent() {
         </p>
       </div>
 
-      <div className="mt-8 divide-y divide-slate-100 rounded-2xl bg-white shadow-sm">
+      <div
+        className={clsx(
+          "mt-8 divide-y divide-slate-100 rounded-2xl bg-white shadow-sm transition-colors duration-300",
+          paidFeedbackActive && "border border-emerald-200 bg-emerald-50/60",
+        )}
+      >
         <DetailRow label={isBorrowed ? "借りた日" : "貸した日"}>
           {data.createdAt
             ? format(new Date(data.createdAt), "yyyy/MM/dd")
@@ -95,10 +112,12 @@ function DebtDetailPageContent() {
         <DetailRow label="ステータス">
           <span
             className={clsx(
-              "inline-flex rounded-full px-3 py-1 text-sm font-semibold",
-              data.status === "paid"
-                ? "bg-slate-100 text-slate-600"
-                : "bg-[var(--color-brand)] text-white",
+              "inline-flex rounded-full px-3 py-1 text-sm font-semibold transition-colors duration-300",
+              paidFeedbackActive
+                ? "bg-emerald-100 text-[var(--color-brand-strong)] animate-pop-in"
+                : data.status === "paid"
+                  ? "bg-slate-100 text-slate-600"
+                  : "bg-[var(--color-brand)] text-white",
             )}
           >
             {statusLabel}
@@ -106,18 +125,35 @@ function DebtDetailPageContent() {
         </DetailRow>
       </div>
 
-      <div className="mt-auto space-y-3 pt-8">
+      <div
+        className={clsx(
+          "mt-auto space-y-3 pt-8 transition-opacity duration-300",
+          paidFeedbackActive && "pointer-events-none opacity-80",
+        )}
+      >
         <button
           type="button"
           onClick={handleToggleStatus}
+          disabled={paidFeedbackActive}
           className={clsx(
-            "flex w-full items-center justify-center rounded-xl px-4 py-3 text-base font-semibold text-white shadow-md transition disabled:opacity-60",
-            data.status === "paid"
-              ? "bg-slate-700 hover:bg-slate-800"
-              : "bg-[var(--color-brand)] hover:bg-[var(--color-brand-strong)]",
+            "tap-press flex w-full items-center justify-center gap-2 rounded-xl px-4 py-3 text-base font-semibold text-white shadow-md transition",
+            paidFeedbackActive
+              ? "bg-emerald-600"
+              : data.status === "paid"
+                ? "bg-slate-700 hover:bg-slate-800"
+                : "bg-[var(--color-brand)] hover:bg-[var(--color-brand-strong)]",
           )}
         >
-          {data.status === "paid" ? "未返済に戻す" : "返済済みにする"}
+          {paidFeedbackActive ? (
+            <>
+              <Check className="animate-pop-in h-5 w-5" strokeWidth={3} />
+              返済済みにしました
+            </>
+          ) : showPaidState ? (
+            "未返済に戻す"
+          ) : (
+            "返済済みにする"
+          )}
         </button>
 
         <button

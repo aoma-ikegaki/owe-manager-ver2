@@ -19,7 +19,8 @@ export type DebtCardProps = {
 };
 
 const formatter = new Intl.NumberFormat("ja-JP");
-const CARD_EXIT_DURATION_MS = 240;
+const CHECK_FEEDBACK_MS = 320;
+const CARD_EXIT_DURATION_MS = 360;
 
 export function DebtCard({
   id,
@@ -38,6 +39,7 @@ export function DebtCard({
   const queryClient = useQueryClient();
   const [justPaid, setJustPaid] = useState(false);
   const [isExiting, setIsExiting] = useState(false);
+  const showPaidFeedback = justPaid || isExiting;
 
   const handlePrefetchDetail = () => {
     void prefetchDebtDetail(queryClient, id);
@@ -46,16 +48,17 @@ export function DebtCard({
   const handleMarkPaid = (e: React.MouseEvent<HTMLButtonElement>) => {
     e.preventDefault();
     e.stopPropagation();
-    if (isExiting) return;
+    if (isExiting || justPaid) return;
 
     setJustPaid(true);
-    setIsExiting(true);
+
+    window.setTimeout(() => {
+      setIsExiting(true);
+    }, CHECK_FEEDBACK_MS);
 
     window.setTimeout(() => {
       updateMutation.mutate({ status: "paid" });
-    }, CARD_EXIT_DURATION_MS);
-
-    window.setTimeout(() => setJustPaid(false), 600);
+    }, CHECK_FEEDBACK_MS + CARD_EXIT_DURATION_MS);
   };
 
   return (
@@ -65,7 +68,12 @@ export function DebtCard({
         isExiting && "animate-card-exit",
       )}
     >
-      <div className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-white px-4 py-3 shadow-sm transition-colors duration-200">
+      <div
+        className={clsx(
+          "flex items-center gap-3 rounded-2xl border border-slate-200 bg-white px-4 py-3 shadow-sm transition-colors duration-300",
+          showPaidFeedback && "border-emerald-200 bg-emerald-50/60",
+        )}
+      >
         <Link
           href={detailHref}
           prefetch
@@ -90,12 +98,18 @@ export function DebtCard({
               ￥{formatter.format(amount)}
             </p>
             <div className="flex items-center gap-1 text-sm text-slate-600">
-              {status === "paid" ? (
+              {showPaidFeedback || status === "paid" ? (
                 <CheckCircle2 className="h-4 w-4 text-[var(--color-brand)]" />
               ) : (
                 <Clock3 className="h-4 w-4 text-amber-500" />
               )}
-              <span>{statusLabel}</span>
+              <span
+                className={clsx(
+                  showPaidFeedback && "font-semibold text-[var(--color-brand)]",
+                )}
+              >
+                {showPaidFeedback ? "返済済み" : statusLabel}
+              </span>
             </div>
           </div>
         </Link>

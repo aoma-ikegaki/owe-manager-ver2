@@ -169,7 +169,7 @@ a,
 }
 
 .animate-card-exit {
-  animation: card-exit 240ms ease-out forwards;
+  animation: card-exit 360ms ease-out forwards;
   pointer-events: none;
 }
 
