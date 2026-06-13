@@ -1,11 +1,13 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import clsx from "clsx";
 import { DebtCard } from "@/components/debt-card";
 import { Fab } from "@/components/fab";
 import { SummaryCard } from "@/components/summary-card";
 import { TabSwitcher } from "@/components/tab-switcher";
 import { useDebts, usePrefetchDebtLists } from "@/hooks/use-debts";
+import { useSplashPhase } from "@/components/app-splash-provider";
 import {
   DebtListSkeleton,
   SummaryCardSkeleton,
@@ -13,9 +15,10 @@ import {
 
 export default function HomePage() {
   const [tab, setTab] = useState<"borrowed" | "lent">("borrowed");
+  const { hideAppChrome } = useSplashPhase();
   usePrefetchDebtLists("unpaid");
   const { data, isPending } = useDebts({ type: tab, status: "unpaid" });
-  const showLoading = isPending && !data;
+  const showLoading = !hideAppChrome && isPending && !data;
 
   const summaries = useMemo(() => {
     if (!data?.summary) {
@@ -66,7 +69,7 @@ export default function HomePage() {
       </div>
 
       <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 pb-28 pt-2">
-        <div key={tab} className="animate-fade-in space-y-3">
+        <div key={tab} className={clsx(!hideAppChrome && "animate-fade-in", "space-y-3")}>
           {showLoading && <DebtListSkeleton showAction />}
           {!showLoading &&
             items.map((debt) => (

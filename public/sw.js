@@ -1,5 +1,5 @@
-const CACHE_NAME = "owemanager-cache-v3";
-const PRECACHE_URLS = ["/manifest.webmanifest", "/icons/icon-192.png"];
+const CACHE_NAME = "owemanager-cache-v5";
+const PRECACHE_URLS = ["/manifest.webmanifest", "/icons/icon-192.png", "/icons/icon-splash.png"];
 
 function isStaticAsset(pathname) {
   return (

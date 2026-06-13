@@ -41,11 +41,40 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="ja" className={`${notoSans.variable}`} suppressHydrationWarning>
+      <head>
+        <link rel="preload" href="/icons/icon-splash.png" as="image" />
+        <style
+          dangerouslySetInnerHTML={{
+            __html: `
+              html.app-launch-splash-active, html.app-launch-splash-active body { background: #fff; }
+              #app-launch-splash {
+                display: none;
+                position: fixed;
+                inset: 0;
+                z-index: 100;
+                background: #fff;
+              }
+              html.app-launch-splash-active #app-launch-splash,
+              #app-launch-splash.is-exiting { display: block; }
+            `,
+          }}
+        />
+      </head>
       <body className="h-dvh overflow-hidden bg-slate-50 text-slate-900 antialiased">
         <Script src="/launch-splash-init.js" strategy="beforeInteractive" />
         <div id="app-launch-splash" aria-hidden="true" suppressHydrationWarning>
           <div className="app-splash-stage">
-            <img src="/icons/icon-192.png" width={160} height={160} alt="" />
+            <img
+              src="/icons/icon-splash.png"
+              srcSet="/icons/icon-splash.png 512w"
+              sizes="10rem"
+              className="app-splash-icon"
+              width={160}
+              height={160}
+              alt=""
+              fetchPriority="high"
+              decoding="sync"
+            />
           </div>
         </div>
         <Providers>

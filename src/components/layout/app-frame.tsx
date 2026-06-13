@@ -21,10 +21,11 @@ function getTabIndex(pathname: string | null) {
 
 export function AppFrame({ children }: PropsWithChildren) {
   const pathname = usePathname();
-  const { phase: splashPhase } = useSplashPhase();
+  const { phase: splashPhase, hideAppChrome } = useSplashPhase();
   const tabIndex = getTabIndex(pathname);
   const prevIndexRef = useRef(tabIndex);
-  const skipTabEnter = splashPhase === "splash" || splashPhase === "exit";
+  const skipTabEnter =
+    hideAppChrome || splashPhase === "splash" || splashPhase === "exit";
 
   const slideFrom =
     tabIndex > prevIndexRef.current

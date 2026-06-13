@@ -9,10 +9,8 @@ import {
   useState,
   type PropsWithChildren,
 } from "react";
-import { createPortal } from "react-dom";
 import { usePathname } from "next/navigation";
 import { useSession } from "next-auth/react";
-import clsx from "clsx";
 import {
   prefetchDebtList,
   useDebts,
@@ -28,34 +26,27 @@ type SplashPhase = "done" | "splash" | "exit";
 
 type SplashContextValue = {
   phase: SplashPhase;
+  hideAppChrome: boolean;
 };
 
-const SplashContext = createContext<SplashContextValue>({ phase: "done" });
+const SplashContext = createContext<SplashContextValue>({
+  phase: "done",
+  hideAppChrome: false,
+});
 
 export function useSplashPhase() {
   return useContext(SplashContext);
 }
 
-function AppSplashOverlay({ exiting }: { exiting: boolean }) {
-  return (
-    <div
-      className={clsx(
-        "pointer-events-none fixed inset-0 z-[100] transition-opacity ease-out",
-        exiting ? "bg-transparent opacity-100 duration-0" : "bg-white opacity-100 duration-0",
-      )}
-      aria-hidden="true"
-    >
-      <div className="app-splash-stage">
-        <img
-          src="/icons/icon-192.png"
-          alt=""
-          width={160}
-          height={160}
-          className={clsx("app-splash-icon", exiting && "is-exiting")}
-        />
-      </div>
-    </div>
-  );
+function syncStaticSplash(phase: SplashPhase) {
+  const splash = document.getElementById("app-launch-splash");
+
+  if (phase === "exit") {
+    splash?.classList.add("is-exiting");
+    return;
+  }
+
+  splash?.classList.remove("is-exiting", "is-fading");
 }
 
 export function AppSplashProvider({ children }: PropsWithChildren) {
@@ -64,13 +55,11 @@ export function AppSplashProvider({ children }: PropsWithChildren) {
   const queryClient = useQueryClient();
   const initializedRef = useRef(false);
   const [phase, setPhase] = useState<SplashPhase>("done");
+  const [hideAppChrome, setHideAppChrome] = useState(false);
   const [minReady, setMinReady] = useState(false);
-  const [canPortal, setCanPortal] = useState(false);
   const { isFetched } = useDebts({ type: "borrowed", status: "unpaid" });
 
   useLayoutEffect(() => {
-    setCanPortal(true);
-
     if (initializedRef.current) return;
     initializedRef.current = true;
 
@@ -81,27 +70,34 @@ export function AppSplashProvider({ children }: PropsWithChildren) {
 
     if (!shouldShow) {
       document.documentElement.classList.remove("app-launch-splash-active");
-      document.documentElement.classList.remove("app-launch-splash-react-ready");
       setPhase("done");
+      setHideAppChrome(false);
       document.body.removeAttribute("data-splash-active");
+      syncStaticSplash("done");
       return;
     }
 
     sessionStorage.setItem(SPLASH_SESSION_KEY, "1");
     document.documentElement.classList.add("app-launch-splash-active");
-    document.documentElement.classList.add("app-launch-splash-react-ready");
     setPhase("splash");
+    setHideAppChrome(true);
     document.body.setAttribute("data-splash-active", "");
+    syncStaticSplash("splash");
   }, []);
+
+  useLayoutEffect(() => {
+    syncStaticSplash(phase);
+  }, [phase]);
 
   useLayoutEffect(() => {
     if (phase !== "splash" && phase !== "exit") return;
     if (pathname === "/home") return;
 
     setPhase("done");
+    setHideAppChrome(false);
     document.body.removeAttribute("data-splash-active");
     document.documentElement.classList.remove("app-launch-splash-active");
-    document.documentElement.classList.remove("app-launch-splash-react-ready");
+    syncStaticSplash("done");
   }, [pathname, phase]);
 
   useEffect(() => {
@@ -121,30 +117,38 @@ export function AppSplashProvider({ children }: PropsWithChildren) {
     if (!isFetched) return;
 
     setPhase("exit");
-    document.documentElement.classList.remove("app-launch-splash-active");
   }, [phase, minReady, status, isFetched]);
 
   useEffect(() => {
     if (phase !== "exit") return;
 
-    const timer = window.setTimeout(() => {
+    const fadeTimer = window.setTimeout(() => {
+      document.getElementById("app-launch-splash")?.classList.add("is-fading");
+    }, SPLASH_EXIT_MS - 160);
+
+    const doneTimer = window.setTimeout(() => {
+      syncStaticSplash("done");
+      document.documentElement.classList.remove("app-launch-splash-active");
       setPhase("done");
-      document.body.removeAttribute("data-splash-active");
-      document.documentElement.classList.remove("app-launch-splash-react-ready");
+
+      window.requestAnimationFrame(() => {
+        setHideAppChrome(false);
+
+        window.setTimeout(() => {
+          document.body.removeAttribute("data-splash-active");
+        }, 320);
+      });
     }, SPLASH_EXIT_MS);
 
-    return () => window.clearTimeout(timer);
+    return () => {
+      window.clearTimeout(fadeTimer);
+      window.clearTimeout(doneTimer);
+    };
   }, [phase]);
 
   return (
-    <SplashContext.Provider value={{ phase }}>
+    <SplashContext.Provider value={{ phase, hideAppChrome }}>
       {children}
-      {canPortal &&
-        (phase === "splash" || phase === "exit") &&
-        createPortal(
-          <AppSplashOverlay exiting={phase === "exit"} />,
-          document.body,
-        )}
     </SplashContext.Provider>
   );
 }
