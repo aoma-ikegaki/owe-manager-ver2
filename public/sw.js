@@ -6,8 +6,8 @@ function isStaticAsset(pathname) {
     pathname.startsWith("/_next/static/") ||
     pathname.startsWith("/icons/") ||
     pathname === "/manifest.webmanifest" ||
-    pathname === "/icon.svg" ||
-    pathname === "/favicon.ico"
+    pathname === "/icon.png" ||
+    pathname === "/apple-icon.png"
   );
 }
 

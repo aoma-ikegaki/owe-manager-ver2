@@ -106,7 +106,6 @@ function DebtDetailPageContent() {
         className={clsx(
           "mt-8 divide-y divide-slate-100 rounded-2xl bg-white shadow-sm transition-colors duration-300",
           paidFeedbackActive && "border border-emerald-200 bg-emerald-50/60",
-          unpaidFeedbackActive && "border border-amber-200 bg-amber-50/50",
         )}
       >
         <DetailRow label={isBorrowed ? "借りた日" : "貸した日"}>

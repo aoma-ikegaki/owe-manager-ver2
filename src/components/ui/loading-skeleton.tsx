@@ -5,9 +5,15 @@ export function Skeleton({
 }: {
   className?: string;
 }) {
+  const hasRadius = className?.split(/\s+/).some((token) => token.startsWith("rounded"));
+
   return (
     <div
-      className={clsx("animate-pulse rounded-lg bg-slate-200", className)}
+      className={clsx(
+        "animate-pulse bg-slate-200",
+        !hasRadius && "rounded-lg",
+        className,
+      )}
       aria-hidden
     />
   );

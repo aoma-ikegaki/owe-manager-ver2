@@ -51,7 +51,7 @@ function AppSplashOverlay({ exiting }: { exiting: boolean }) {
         width={112}
         height={112}
         className={clsx(
-          "h-28 w-28 rounded-[1.75rem] shadow-sm transition-all ease-[cubic-bezier(0.33,1,0.68,1)]",
+          "app-splash-icon transition-all ease-[cubic-bezier(0.33,1,0.68,1)]",
           exiting
             ? "scale-[0.32] opacity-0 duration-[420ms]"
             : "scale-100 opacity-100 duration-0",
@@ -83,12 +83,16 @@ export function AppSplashProvider({ children }: PropsWithChildren) {
       !sessionStorage.getItem(SPLASH_SESSION_KEY);
 
     if (!shouldShow) {
+      document.documentElement.classList.remove("app-launch-splash-active");
+      document.documentElement.classList.remove("app-launch-splash-react-ready");
       setPhase("done");
       document.body.removeAttribute("data-splash-active");
       return;
     }
 
     sessionStorage.setItem(SPLASH_SESSION_KEY, "1");
+    document.documentElement.classList.add("app-launch-splash-active");
+    document.documentElement.classList.add("app-launch-splash-react-ready");
     setPhase("splash");
     document.body.setAttribute("data-splash-active", "");
   }, []);
@@ -99,6 +103,8 @@ export function AppSplashProvider({ children }: PropsWithChildren) {
 
     setPhase("done");
     document.body.removeAttribute("data-splash-active");
+    document.documentElement.classList.remove("app-launch-splash-active");
+    document.documentElement.classList.remove("app-launch-splash-react-ready");
   }, [pathname, phase]);
 
   useEffect(() => {
@@ -122,6 +128,8 @@ export function AppSplashProvider({ children }: PropsWithChildren) {
     const timer = window.setTimeout(() => {
       setPhase("done");
       document.body.removeAttribute("data-splash-active");
+      document.documentElement.classList.remove("app-launch-splash-active");
+      document.documentElement.classList.remove("app-launch-splash-react-ready");
     }, SPLASH_EXIT_MS);
 
     return () => window.clearTimeout(timer);

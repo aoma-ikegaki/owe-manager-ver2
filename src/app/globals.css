@@ -157,6 +157,42 @@ body[data-splash-active] .animate-fade-in {
   animation: none;
 }
 
+#app-launch-splash {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  align-items: center;
+  justify-content: center;
+  background: #fff;
+}
+
+html.app-launch-splash-active #app-launch-splash {
+  display: flex;
+}
+
+html.app-launch-splash-active [data-app-content] {
+  visibility: hidden;
+}
+
+html.app-launch-splash-active body {
+  background: #fff;
+}
+
+html.app-launch-splash-react-ready #app-launch-splash {
+  display: none;
+}
+
+#app-launch-splash img,
+.app-splash-icon {
+  width: 7rem;
+  height: 7rem;
+  border: none;
+  outline: none;
+  box-shadow: none;
+  border-radius: 0;
+}
+
 @keyframes slide-up {
   from {
     opacity: 0;

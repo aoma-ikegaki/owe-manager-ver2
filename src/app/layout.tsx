@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Script from "next/script";
 import { Noto_Sans_JP } from "next/font/google";
 import "./globals.css";
 import { Providers } from "./providers";
@@ -18,10 +19,10 @@ export const metadata: Metadata = {
   manifest: "/manifest.webmanifest",
   icons: {
     icon: [
-      { url: "/icon.svg", type: "image/svg+xml" },
       { url: "/icons/icon-192.png", sizes: "192x192", type: "image/png" },
     ],
-    apple: "/icons/icon-192.png",
+    apple: "/icons/apple-touch-icon.png",
+    shortcut: "/icons/icon-192.png",
   },
   appleWebApp: {
     capable: true,
@@ -39,8 +40,12 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="ja" className={`${notoSans.variable}`}>
+    <html lang="ja" className={`${notoSans.variable}`} suppressHydrationWarning>
       <body className="h-dvh overflow-hidden bg-slate-50 text-slate-900 antialiased">
+        <Script src="/launch-splash-init.js" strategy="beforeInteractive" />
+        <div id="app-launch-splash" aria-hidden="true" suppressHydrationWarning>
+          <img src="/icons/icon-192.png" width={112} height={112} alt="" />
+        </div>
         <Providers>
           <PwaRegister />
           {children}
