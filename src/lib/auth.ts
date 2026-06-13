@@ -38,6 +38,11 @@ export const authOptions: NextAuthOptions = {
     signIn: "/login",
   },
   callbacks: {
+    async redirect({ url, baseUrl }) {
+      if (url.startsWith("/")) return `${baseUrl}${url}`;
+      if (new URL(url).origin === baseUrl) return url;
+      return `${baseUrl}/home`;
+    },
     async jwt({ token, user }) {
       // 初回ログイン時のみ user が存在する
       if (user) {
