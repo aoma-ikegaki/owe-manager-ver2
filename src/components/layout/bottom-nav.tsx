@@ -29,22 +29,13 @@ export function BottomNav() {
               className="flex flex-1 items-center justify-center"
               aria-label={item.label}
             >
-              <div className="flex flex-col items-center gap-1 py-1 text-sm font-medium">
-                <Icon
-                  className={clsx(
-                    "h-6 w-6",
-                    active ? "text-[var(--color-brand)]" : "text-slate-500",
-                  )}
-                  strokeWidth={2}
-                />
-                <span
-                  className={clsx(
-                    active ? "text-[var(--color-brand)]" : "text-slate-500",
-                  )}
-                >
-                  {item.label}
-                </span>
-              </div>
+              <Icon
+                className={clsx(
+                  "h-7 w-7 py-2",
+                  active ? "text-[var(--color-brand)]" : "text-slate-500",
+                )}
+                strokeWidth={2}
+              />
             </Link>
           );
         })}
