@@ -16,8 +16,8 @@ export default function EditDebtPage() {
   const { data } = useDebt(id);
   const updateMutation = useUpdateDebt(id);
 
-  const handleSubmit = async (values: DebtInput) => {
-    await updateMutation.mutateAsync(values);
+  const handleSubmit = (values: DebtInput) => {
+    updateMutation.mutate(values);
     router.replace(`/debts/${id}`);
   };
 
@@ -54,7 +54,6 @@ export default function EditDebtPage() {
           }}
           allowStatusChange
           onSubmit={handleSubmit}
-          loading={updateMutation.isPending}
           submitLabel="更新する"
         />
       </div>

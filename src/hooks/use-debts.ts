@@ -109,77 +109,84 @@ function findDebtInCaches(queryClient: QueryClient, id: string): Debt | undefine
   return undefined;
 }
 
-function updateSummaryAfterStatusChange(
+function adjustSummaryForUnpaidDebt(
   summary: DebtSummary,
   debt: Debt,
-  previousStatus: Debt["status"],
-  nextStatus: Debt["status"],
+  direction: 1 | -1,
 ): DebtSummary {
-  if (previousStatus === nextStatus) return summary;
+  if (debt.status !== "unpaid") return summary;
 
-  const next = {
-    borrowed: { ...summary.borrowed },
-    lent: { ...summary.lent },
+  return {
+    ...summary,
+    [debt.type]: {
+      unpaidAmount: Math.max(
+        0,
+        summary[debt.type].unpaidAmount + direction * debt.amount,
+      ),
+      unpaidCount: Math.max(0, summary[debt.type].unpaidCount + direction),
+    },
   };
-
-  if (previousStatus === "unpaid" && nextStatus === "paid") {
-    next[debt.type] = {
-      unpaidAmount: Math.max(0, next[debt.type].unpaidAmount - debt.amount),
-      unpaidCount: Math.max(0, next[debt.type].unpaidCount - 1),
-    };
-  } else if (previousStatus === "paid" && nextStatus === "unpaid") {
-    next[debt.type] = {
-      unpaidAmount: next[debt.type].unpaidAmount + debt.amount,
-      unpaidCount: next[debt.type].unpaidCount + 1,
-    };
-  }
-
-  return next;
 }
 
-function applyDebtStatusChangeToCaches(
-  queryClient: QueryClient,
+function buildOptimisticUpdatedDebt(
   debt: Debt,
-  nextStatus: Debt["status"],
-) {
-  const previousStatus = debt.status;
-  if (previousStatus === nextStatus) return;
-
-  const updatedDebt: Debt = {
+  payload: Partial<DebtInput>,
+): Debt {
+  return {
     ...debt,
-    status: nextStatus,
+    partnerName: payload.partnerName ?? debt.partnerName,
+    amount: payload.amount ?? debt.amount,
+    type: payload.type ?? debt.type,
+    status: payload.status ?? debt.status,
+    createdAt: payload.occurredOn
+      ? parseDateInput(payload.occurredOn)
+      : debt.createdAt,
     updatedAt: new Date(),
   };
+}
 
+function applyDebtEditToCaches(
+  queryClient: QueryClient,
+  previous: Debt,
+  updated: Debt,
+) {
   for (const query of debtListQueries) {
     queryClient.setQueryData<DebtListData>(debtListKey(query), (current) => {
       if (!current) return current;
 
-      let items = current.items;
-      const matchesType = debt.type === query.type;
+      let items = current.items.filter((item) => item.id !== previous.id);
+      let summary = adjustSummaryForUnpaidDebt(current.summary, previous, -1);
 
-      if (matchesType && query.status === previousStatus) {
-        items = items.filter((item) => item.id !== debt.id);
+      if (updated.type === query.type && updated.status === query.status) {
+        items = [updated, ...items];
       }
-      if (matchesType && query.status === nextStatus) {
-        items = items.some((item) => item.id === debt.id)
-          ? items.map((item) => (item.id === debt.id ? updatedDebt : item))
-          : [updatedDebt, ...items];
-      }
+      summary = adjustSummaryForUnpaidDebt(summary, updated, 1);
+
+      return { items, summary };
+    });
+  }
+
+  queryClient.setQueryData(debtDetailKey(updated.id), updated);
+}
+
+function applyDebtDeleteToCaches(queryClient: QueryClient, debt: Debt) {
+  for (const query of debtListQueries) {
+    queryClient.setQueryData<DebtListData>(debtListKey(query), (current) => {
+      if (!current) return current;
+
+      const removeFromItems =
+        debt.type === query.type && debt.status === query.status;
 
       return {
-        items,
-        summary: updateSummaryAfterStatusChange(
-          current.summary,
-          debt,
-          previousStatus,
-          nextStatus,
-        ),
+        items: removeFromItems
+          ? current.items.filter((item) => item.id !== debt.id)
+          : current.items,
+        summary: adjustSummaryForUnpaidDebt(current.summary, debt, -1),
       };
     });
   }
 
-  queryClient.setQueryData(debtDetailKey(debt.id), updatedDebt);
+  queryClient.removeQueries({ queryKey: debtDetailKey(debt.id) });
 }
 
 function reconcileDebtInCaches(queryClient: QueryClient, updated: Debt) {
@@ -201,8 +208,16 @@ function reconcileDebtInCaches(queryClient: QueryClient, updated: Debt) {
   queryClient.setQueryData(debtDetailKey(updated.id), updated);
 }
 
-function isStatusOnlyUpdate(payload: Partial<DebtInput>): payload is { status: Debt["status"] } {
-  return payload.status !== undefined && Object.keys(payload).length === 1;
+function restoreDebtDetailSnapshot(
+  queryClient: QueryClient,
+  id: string,
+  detailSnapshot: Debt | undefined,
+) {
+  if (detailSnapshot === undefined) {
+    queryClient.removeQueries({ queryKey: debtDetailKey(id) });
+  } else {
+    queryClient.setQueryData(debtDetailKey(id), detailSnapshot);
+  }
 }
 
 function updateSummaryAfterCreate(
@@ -322,19 +337,18 @@ export function useUpdateDebt(id: string) {
   return useMutation({
     mutationFn: (payload: Partial<DebtInput>) => updateDebt(id, payload),
     onMutate: async (payload) => {
-      if (!isStatusOnlyUpdate(payload)) return undefined;
-
       const debt = findDebtInCaches(qc, id);
       if (!debt) return undefined;
 
       const snapshots = snapshotDebtLists(qc);
       const detailSnapshot = qc.getQueryData<Debt>(debtDetailKey(id));
-      applyDebtStatusChangeToCaches(qc, debt, payload.status);
+      const updated = buildOptimisticUpdatedDebt(debt, payload);
+      applyDebtEditToCaches(qc, debt, updated);
 
       return { snapshots, detailSnapshot };
     },
-    onSuccess: (updated, payload, context) => {
-      if (isStatusOnlyUpdate(payload) && context) {
+    onSuccess: (updated, _payload, context) => {
+      if (context) {
         reconcileDebtInCaches(qc, updated);
         return;
       }
@@ -342,15 +356,11 @@ export function useUpdateDebt(id: string) {
       qc.invalidateQueries({ queryKey: ["debts"] });
       qc.invalidateQueries({ queryKey: debtDetailKey(id) });
     },
-    onError: (_error, payload, context) => {
-      if (!isStatusOnlyUpdate(payload) || !context) return;
+    onError: (_error, _payload, context) => {
+      if (!context) return;
 
       restoreDebtListSnapshots(qc, context.snapshots);
-      if (context.detailSnapshot === undefined) {
-        qc.removeQueries({ queryKey: debtDetailKey(id) });
-      } else {
-        qc.setQueryData(debtDetailKey(id), context.detailSnapshot);
-      }
+      restoreDebtDetailSnapshot(qc, id, context.detailSnapshot);
       window.alert("更新に失敗しました。もう一度お試しください。");
     },
   });
@@ -360,8 +370,28 @@ export function useDeleteDebt(id: string) {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: () => deleteDebtApi(id),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["debts"] });
+    onMutate: async () => {
+      const debt = findDebtInCaches(qc, id);
+      if (!debt) return undefined;
+
+      const snapshots = snapshotDebtLists(qc);
+      const detailSnapshot = qc.getQueryData<Debt>(debtDetailKey(id));
+      applyDebtDeleteToCaches(qc, debt);
+
+      return { snapshots, detailSnapshot };
+    },
+    onSuccess: (_result, _variables, context) => {
+      if (!context) {
+        qc.invalidateQueries({ queryKey: ["debts"] });
+        qc.removeQueries({ queryKey: debtDetailKey(id) });
+      }
+    },
+    onError: (_error, _variables, context) => {
+      if (!context) return;
+
+      restoreDebtListSnapshots(qc, context.snapshots);
+      restoreDebtDetailSnapshot(qc, id, context.detailSnapshot);
+      window.alert("削除に失敗しました。もう一度お試しください。");
     },
   });
 }

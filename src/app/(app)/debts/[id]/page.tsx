@@ -44,11 +44,11 @@ export default function DebtDetailPage() {
     });
   };
 
-  const handleDelete = async () => {
+  const handleDelete = () => {
     if (!data) return;
     const ok = window.confirm("この記録を削除しますか？");
     if (!ok) return;
-    await deleteMutation.mutateAsync();
+    deleteMutation.mutate();
     router.replace("/home");
   };
 
@@ -101,7 +101,6 @@ export default function DebtDetailPage() {
         <button
           type="button"
           onClick={handleToggleStatus}
-          disabled={updateMutation.isPending}
           className={clsx(
             "flex w-full items-center justify-center rounded-xl px-4 py-3 text-base font-semibold text-white shadow-md transition disabled:opacity-60",
             data.status === "paid"
@@ -123,8 +122,7 @@ export default function DebtDetailPage() {
         <button
           type="button"
           onClick={handleDelete}
-          disabled={deleteMutation.isPending}
-          className="flex w-full items-center justify-center gap-2 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-base font-semibold text-red-700 transition hover:bg-red-100 disabled:opacity-60"
+          className="flex w-full items-center justify-center gap-2 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-base font-semibold text-red-700 transition hover:bg-red-100"
         >
           <Trash className="h-5 w-5" />
           削除する
