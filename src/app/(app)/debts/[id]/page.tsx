@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, type ReactNode } from "react";
+import { useMemo, useState, type ReactNode } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { Trash } from "lucide-react";
 import { format } from "date-fns";
@@ -8,6 +8,7 @@ import clsx from "clsx";
 import { BackButton } from "@/components/back-button";
 import { useDebt, useDeleteDebt, useUpdateDebt } from "@/hooks/use-debts";
 import { DebtDetailSkeleton } from "@/components/ui/loading-skeleton";
+import { ConfirmBottomSheet } from "@/components/ui/confirm-bottom-sheet";
 
 function DetailRow({
   label,
@@ -31,6 +32,7 @@ export default function DebtDetailPage() {
   const { data } = useDebt(id);
   const updateMutation = useUpdateDebt(id);
   const deleteMutation = useDeleteDebt(id);
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
 
   const statusLabel = useMemo(
     () => (data?.status === "paid" ? "返済済み" : "未返済"),
@@ -44,10 +46,9 @@ export default function DebtDetailPage() {
     });
   };
 
-  const handleDelete = () => {
+  const handleConfirmDelete = () => {
     if (!data) return;
-    const ok = window.confirm("この記録を削除しますか？");
-    if (!ok) return;
+    setDeleteConfirmOpen(false);
     deleteMutation.mutate();
     router.replace("/home");
   };
@@ -121,13 +122,24 @@ export default function DebtDetailPage() {
 
         <button
           type="button"
-          onClick={handleDelete}
+          onClick={() => setDeleteConfirmOpen(true)}
           className="flex w-full items-center justify-center gap-2 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-base font-semibold text-red-700 transition hover:bg-red-100"
         >
           <Trash className="h-5 w-5" />
           削除する
         </button>
       </div>
+
+      <ConfirmBottomSheet
+        open={deleteConfirmOpen}
+        title="この記録を削除しますか？"
+        description={`${data.partnerName}（￥${data.amount.toLocaleString("ja-JP")}）の記録を削除します。この操作は取り消せません。`}
+        confirmLabel="削除する"
+        cancelLabel="キャンセル"
+        destructive
+        onConfirm={handleConfirmDelete}
+        onCancel={() => setDeleteConfirmOpen(false)}
+      />
     </div>
   );
 }
