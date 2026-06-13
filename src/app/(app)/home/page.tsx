@@ -1,7 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
-import clsx from "clsx";
+import { useMemo, useState } from "react";
 import { DebtCard } from "@/components/debt-card";
 import { Fab } from "@/components/fab";
 import { SummaryCard } from "@/components/summary-card";
@@ -21,8 +20,6 @@ import {
 export default function HomePage() {
   const [tab, setTab] = useState<"borrowed" | "lent">("borrowed");
   const { phase } = useSplashPhase();
-  const prevTabRef = useRef(tab);
-  const [fadeInList, setFadeInList] = useState(false);
   const queryClient = useQueryClient();
   usePrefetchDebtLists("unpaid");
 
@@ -31,16 +28,6 @@ export default function HomePage() {
   };
   const { data, isPending } = useDebts({ type: tab, status: "unpaid" });
   const showLoading = phase === "done" && isPending && !data;
-
-  useEffect(() => {
-    if (phase !== "done") return;
-    if (prevTabRef.current === tab) return;
-
-    setFadeInList(true);
-    const timer = window.setTimeout(() => setFadeInList(false), 240);
-    prevTabRef.current = tab;
-    return () => window.clearTimeout(timer);
-  }, [tab, phase]);
 
   const summaries = useMemo(() => {
     if (!data?.summary) {
@@ -91,7 +78,7 @@ export default function HomePage() {
       </div>
 
       <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 pb-28 pt-2">
-        <div key={tab} className={clsx(fadeInList && "animate-fade-in", "space-y-3")}>
+        <div className="space-y-3">
           {showLoading && <DebtListSkeleton showAction />}
           {!showLoading &&
             items.map((debt) => (

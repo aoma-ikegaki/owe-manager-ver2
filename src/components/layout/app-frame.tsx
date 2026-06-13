@@ -1,12 +1,6 @@
 'use client';
 
-import {
-  type CSSProperties,
-  type PropsWithChildren,
-  useEffect,
-  useRef,
-  useState,
-} from "react";
+import { type PropsWithChildren, useEffect, useRef, useState } from "react";
 import { usePathname } from "next/navigation";
 import clsx from "clsx";
 import { BottomNav } from "./bottom-nav";
@@ -27,19 +21,12 @@ export function AppFrame({ children }: PropsWithChildren) {
   const prevIndexRef = useRef(tabIndex);
   const [tabEnterActive, setTabEnterActive] = useState(false);
 
-  const slideFrom =
-    tabIndex > prevIndexRef.current
-      ? "12px"
-      : tabIndex < prevIndexRef.current
-        ? "-12px"
-        : "6px";
-
   useEffect(() => {
     if (splashPhase !== "done") return;
     if (prevIndexRef.current === tabIndex) return;
 
     setTabEnterActive(true);
-    const timer = window.setTimeout(() => setTabEnterActive(false), 240);
+    const timer = window.setTimeout(() => setTabEnterActive(false), 200);
     prevIndexRef.current = tabIndex;
     return () => window.clearTimeout(timer);
   }, [tabIndex, splashPhase]);
@@ -51,7 +38,6 @@ export function AppFrame({ children }: PropsWithChildren) {
           "min-h-0 flex-1 overflow-hidden",
           tabEnterActive && "animate-tab-enter",
         )}
-        style={{ "--tab-enter-from": slideFrom } as CSSProperties}
       >
         {children}
       </main>

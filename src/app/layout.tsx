@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Script from "next/script";
 import { Noto_Sans_JP } from "next/font/google";
 import "./globals.css";
 import { Providers } from "./providers";
@@ -84,13 +85,9 @@ export default function RootLayout({
             `,
           }}
         />
-        <script
-          dangerouslySetInnerHTML={{
-            __html: `(function(){try{if(sessionStorage.getItem("owemanager-splash-seen"))return;var p=location.pathname;if(p!=="/home"&&p!=="/")return;document.documentElement.classList.add("app-launch-splash-active");var i=new Image();i.src="/icons/icon-splash.png";}catch(e){}})();`,
-          }}
-        />
       </head>
       <body className="h-dvh overflow-hidden bg-slate-50 text-slate-900 antialiased">
+        <Script src="/launch-splash-init.js" strategy="beforeInteractive" />
         <div id="app-launch-splash" aria-hidden="true" suppressHydrationWarning>
           <div className="app-splash-stage" role="img" aria-label="OweManager" />
         </div>
