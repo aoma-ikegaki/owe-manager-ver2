@@ -7,6 +7,10 @@ import { Fab } from "@/components/fab";
 import { SummaryCard } from "@/components/summary-card";
 import { TabSwitcher } from "@/components/tab-switcher";
 import { useDebts, usePrefetchDebtLists } from "@/hooks/use-debts";
+import {
+  DebtListSkeleton,
+  SummaryCardSkeleton,
+} from "@/components/ui/loading-skeleton";
 
 export default function HomePage() {
   const [tab, setTab] = useState<"borrowed" | "lent">("borrowed");
@@ -36,18 +40,27 @@ export default function HomePage() {
           <DefaultUserAvatar className="absolute right-0 flex h-9 w-9 items-center justify-center rounded-full bg-slate-100" />
         </div>
         <div className="mt-2 grid grid-cols-2 gap-2">
-          <SummaryCard
-            title="借りた"
-            amount={summaries.borrowed.unpaidAmount}
-            count={summaries.borrowed.unpaidCount}
-            variant="borrowed"
-          />
-          <SummaryCard
-            title="貸した"
-            amount={summaries.lent.unpaidAmount}
-            count={summaries.lent.unpaidCount}
-            variant="lent"
-          />
+          {showLoading ? (
+            <>
+              <SummaryCardSkeleton />
+              <SummaryCardSkeleton />
+            </>
+          ) : (
+            <>
+              <SummaryCard
+                title="借りた"
+                amount={summaries.borrowed.unpaidAmount}
+                count={summaries.borrowed.unpaidCount}
+                variant="borrowed"
+              />
+              <SummaryCard
+                title="貸した"
+                amount={summaries.lent.unpaidAmount}
+                count={summaries.lent.unpaidCount}
+                variant="lent"
+              />
+            </>
+          )}
         </div>
       </header>
 
@@ -57,9 +70,7 @@ export default function HomePage() {
 
       <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 pb-28 pt-2">
         <div key={tab} className="animate-fade-in space-y-3">
-          {showLoading && (
-            <p className="text-center text-base text-slate-500">読み込み中...</p>
-          )}
+          {showLoading && <DebtListSkeleton showAction />}
           {!showLoading &&
             items.map((debt) => (
               <DebtCard

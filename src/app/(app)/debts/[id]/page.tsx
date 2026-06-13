@@ -7,6 +7,7 @@ import { format } from "date-fns";
 import clsx from "clsx";
 import { BackButton } from "@/components/back-button";
 import { useDebt, useDeleteDebt, useUpdateDebt } from "@/hooks/use-debts";
+import { DebtDetailSkeleton } from "@/components/ui/loading-skeleton";
 
 function DetailRow({
   label,
@@ -53,9 +54,9 @@ export default function DebtDetailPage() {
 
   if (!data) {
     return (
-      <div className="h-full overflow-y-auto bg-slate-50 px-5 pb-24 pt-6">
+      <div className="flex h-full min-h-0 flex-col overflow-y-auto bg-slate-50 px-5 pb-24 pt-6">
         <BackButton />
-        <p className="mt-4 text-center text-base text-slate-500">読み込み中...</p>
+        <DebtDetailSkeleton />
       </div>
     );
   }

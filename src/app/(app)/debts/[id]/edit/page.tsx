@@ -6,6 +6,7 @@ import { DebtForm } from "@/components/forms/debt-form";
 import { PageHeader } from "@/components/page-header";
 import { toDateInputValue } from "@/lib/date-utils";
 import { useDebt, useUpdateDebt } from "@/hooks/use-debts";
+import { DebtFormSkeleton, Skeleton } from "@/components/ui/loading-skeleton";
 import type { DebtInput } from "@/lib/validation";
 
 export default function EditDebtPage() {
@@ -24,7 +25,12 @@ export default function EditDebtPage() {
     return (
       <div className="h-full overflow-y-auto bg-slate-50 px-5 pb-24 pt-6">
         <BackButton />
-        <p className="mt-4 text-center text-base text-slate-500">読み込み中...</p>
+        <div className="mt-6 text-center">
+          <Skeleton className="mx-auto h-7 w-16" />
+        </div>
+        <div className="mt-4 rounded-2xl bg-white p-4 shadow-sm">
+          <DebtFormSkeleton />
+        </div>
       </div>
     );
   }
