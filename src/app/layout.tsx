@@ -12,14 +12,24 @@ const notoSans = Noto_Sans_JP({
 });
 
 export const metadata: Metadata = {
-  title: "OweManager v2",
+  title: "OweManager",
   description: "友人間の少額の貸し借りをサッと記録するPWA",
-  applicationName: "OweManager v2",
+  applicationName: "OweManager",
   manifest: "/manifest.webmanifest",
-  themeColor: "#2f9b50",
+  icons: {
+    icon: [
+      { url: "/icons/icon-192.png", sizes: "192x192", type: "image/png" },
+      { url: "/icons/icon-512.png", sizes: "512x512", type: "image/png" },
+    ],
+    apple: [{ url: "/icons/apple-touch-icon.png", sizes: "180x180", type: "image/png" }],
+  },
   appleWebApp: {
-    title: "OweManager v2",
+    capable: true,
+    title: "OweManager",
     statusBarStyle: "default",
+  },
+  formatDetection: {
+    telephone: false,
   },
 };
 
