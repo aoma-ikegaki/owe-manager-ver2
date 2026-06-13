@@ -40,23 +40,20 @@ function AppSplashOverlay({ exiting }: { exiting: boolean }) {
   return (
     <div
       className={clsx(
-        "pointer-events-none fixed inset-0 z-[100] flex items-center justify-center bg-white transition-opacity ease-out",
-        exiting ? "opacity-0 duration-300" : "opacity-100 duration-0",
+        "pointer-events-none fixed inset-0 z-[100] transition-opacity ease-out",
+        exiting ? "bg-transparent opacity-100 duration-0" : "bg-white opacity-100 duration-0",
       )}
       aria-hidden="true"
     >
-      <img
-        src="/icons/icon-192.png"
-        alt=""
-        width={112}
-        height={112}
-        className={clsx(
-          "app-splash-icon transition-all ease-[cubic-bezier(0.33,1,0.68,1)]",
-          exiting
-            ? "scale-[0.32] opacity-0 duration-[420ms]"
-            : "scale-100 opacity-100 duration-0",
-        )}
-      />
+      <div className="app-splash-stage">
+        <img
+          src="/icons/icon-192.png"
+          alt=""
+          width={160}
+          height={160}
+          className={clsx("app-splash-icon", exiting && "is-exiting")}
+        />
+      </div>
     </div>
   );
 }
@@ -124,16 +121,20 @@ export function AppSplashProvider({ children }: PropsWithChildren) {
     if (!isFetched) return;
 
     setPhase("exit");
+    document.documentElement.classList.remove("app-launch-splash-active");
+  }, [phase, minReady, status, isFetched]);
+
+  useEffect(() => {
+    if (phase !== "exit") return;
 
     const timer = window.setTimeout(() => {
       setPhase("done");
       document.body.removeAttribute("data-splash-active");
-      document.documentElement.classList.remove("app-launch-splash-active");
       document.documentElement.classList.remove("app-launch-splash-react-ready");
     }, SPLASH_EXIT_MS);
 
     return () => window.clearTimeout(timer);
-  }, [phase, minReady, status, isFetched]);
+  }, [phase]);
 
   return (
     <SplashContext.Provider value={{ phase }}>

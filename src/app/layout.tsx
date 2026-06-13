@@ -44,7 +44,9 @@ export default function RootLayout({
       <body className="h-dvh overflow-hidden bg-slate-50 text-slate-900 antialiased">
         <Script src="/launch-splash-init.js" strategy="beforeInteractive" />
         <div id="app-launch-splash" aria-hidden="true" suppressHydrationWarning>
-          <img src="/icons/icon-192.png" width={112} height={112} alt="" />
+          <div className="app-splash-stage">
+            <img src="/icons/icon-192.png" width={160} height={160} alt="" />
+          </div>
         </div>
         <Providers>
           <PwaRegister />
