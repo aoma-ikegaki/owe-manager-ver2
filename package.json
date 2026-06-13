@@ -7,8 +7,10 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "db:generate": "drizzle-kit generate",
-    "db:push": "drizzle-kit push"
+    "db:generate": "drizzle-kit generate --config=config/drizzle.config.ts",
+    "db:push": "drizzle-kit push --config=config/drizzle.config.ts",
+    "db:drop-tables": "node scripts/db/drop-tables.js",
+    "db:list-tables": "node scripts/db/list-tables.js"
   },
   "dependencies": {
     "@auth/core": "^0.34.3",
