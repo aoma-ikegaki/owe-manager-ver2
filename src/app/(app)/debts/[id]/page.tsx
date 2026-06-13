@@ -2,7 +2,7 @@
 
 import { Suspense, useMemo, useState, type ReactNode } from "react";
 import { useRouter, useParams, useSearchParams } from "next/navigation";
-import { Trash, Check } from "lucide-react";
+import { Trash, Check, Clock3 } from "lucide-react";
 import { format } from "date-fns";
 import clsx from "clsx";
 import { BackButton } from "@/components/back-button";
@@ -39,23 +39,27 @@ function DebtDetailPageContent() {
   const deleteMutation = useDeleteDebt(id);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [paidFeedbackActive, setPaidFeedbackActive] = useState(false);
+  const [unpaidFeedbackActive, setUnpaidFeedbackActive] = useState(false);
 
-  const showPaidState = paidFeedbackActive || data?.status === "paid";
+  const statusFeedbackActive = paidFeedbackActive || unpaidFeedbackActive;
+  const showPaidState =
+    paidFeedbackActive || (!unpaidFeedbackActive && data?.status === "paid");
   const statusLabel = useMemo(
     () => (showPaidState ? "返済済み" : "未返済"),
     [showPaidState],
   );
 
   const handleToggleStatus = () => {
-    if (!data || paidFeedbackActive) return;
+    if (!data || statusFeedbackActive) return;
 
     const markingUnpaid = data.status === "paid";
 
     if (markingUnpaid) {
-      if (fromHistory) {
-        router.replace("/history");
-      }
-      updateMutation.mutate({ status: "unpaid" });
+      setUnpaidFeedbackActive(true);
+      window.setTimeout(() => {
+        router.replace(fromHistory ? "/history" : "/home");
+        updateMutation.mutate({ status: "unpaid" });
+      }, CHECK_FEEDBACK_MS + COMPLETION_HOLD_MS);
       return;
     }
 
@@ -102,6 +106,7 @@ function DebtDetailPageContent() {
         className={clsx(
           "mt-8 divide-y divide-slate-100 rounded-2xl bg-white shadow-sm transition-colors duration-300",
           paidFeedbackActive && "border border-emerald-200 bg-emerald-50/60",
+          unpaidFeedbackActive && "border border-amber-200 bg-amber-50/50",
         )}
       >
         <DetailRow label={isBorrowed ? "借りた日" : "貸した日"}>
@@ -115,9 +120,11 @@ function DebtDetailPageContent() {
               "inline-flex rounded-full px-3 py-1 text-sm font-semibold transition-colors duration-300",
               paidFeedbackActive
                 ? "bg-emerald-100 text-[var(--color-brand-strong)] animate-pop-in"
-                : data.status === "paid"
-                  ? "bg-slate-100 text-slate-600"
-                  : "bg-[var(--color-brand)] text-white",
+                : unpaidFeedbackActive
+                  ? "bg-[var(--color-brand)] text-white animate-pop-in"
+                  : data.status === "paid"
+                    ? "bg-slate-100 text-slate-600"
+                    : "bg-[var(--color-brand)] text-white",
             )}
           >
             {statusLabel}
@@ -128,26 +135,33 @@ function DebtDetailPageContent() {
       <div
         className={clsx(
           "mt-auto space-y-3 pt-8 transition-opacity duration-300",
-          paidFeedbackActive && "pointer-events-none opacity-80",
+          statusFeedbackActive && "pointer-events-none opacity-80",
         )}
       >
         <button
           type="button"
           onClick={handleToggleStatus}
-          disabled={paidFeedbackActive}
+          disabled={statusFeedbackActive}
           className={clsx(
             "tap-press flex w-full items-center justify-center gap-2 rounded-xl px-4 py-3 text-base font-semibold text-white shadow-md transition",
             paidFeedbackActive
               ? "bg-emerald-600"
-              : data.status === "paid"
-                ? "bg-slate-700 hover:bg-slate-800"
-                : "bg-[var(--color-brand)] hover:bg-[var(--color-brand-strong)]",
+              : unpaidFeedbackActive
+                ? "bg-[var(--color-brand)]"
+                : data.status === "paid"
+                  ? "bg-slate-700 hover:bg-slate-800"
+                  : "bg-[var(--color-brand)] hover:bg-[var(--color-brand-strong)]",
           )}
         >
           {paidFeedbackActive ? (
             <>
               <Check className="animate-pop-in h-5 w-5" strokeWidth={3} />
               返済済みにしました
+            </>
+          ) : unpaidFeedbackActive ? (
+            <>
+              <Clock3 className="animate-pop-in h-5 w-5" strokeWidth={2.5} />
+              未返済に戻しました
             </>
           ) : showPaidState ? (
             "未返済に戻す"
