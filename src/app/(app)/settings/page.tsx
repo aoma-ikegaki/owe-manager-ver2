@@ -2,6 +2,7 @@
 
 import { signOut, useSession } from "next-auth/react";
 import { DefaultUserAvatar } from "@/components/default-user-avatar";
+import { SettingsHelpSection } from "@/components/settings-help-section";
 
 export default function SettingsPage() {
   const { data } = useSession();
@@ -26,6 +27,7 @@ export default function SettingsPage() {
           </div>
         </div>
       </div>
+      <SettingsHelpSection />
       <button
         type="button"
         onClick={() => signOut({ callbackUrl: "/login" })}
