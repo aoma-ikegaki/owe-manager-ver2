@@ -11,10 +11,10 @@ import {
 
 export const authOptions: NextAuthOptions = {
   adapter: DrizzleAdapter(db, {
-    accounts: account,
-    users: user,
-    sessions: session,
-    verificationTokens: verificationToken,
+    usersTable: user,
+    accountsTable: account,
+    sessionsTable: session,
+    verificationTokensTable: verificationToken,
   }),
   secret: process.env.AUTH_SECRET ?? process.env.NEXTAUTH_SECRET,
   providers: [

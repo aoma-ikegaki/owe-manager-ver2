@@ -81,7 +81,7 @@ export const debts = pgTable("debts", {
   userId: text("userId")
     .notNull()
     .references(() => user.id, { onDelete: "cascade" }),
-  partnerName: text("partner_name", { length: 50 }).notNull(),
+  partnerName: text("partner_name").notNull(),
   amount: integer("amount").notNull(),
   type: debtTypeEnum("type").notNull(),
   status: debtStatusEnum("status").notNull().default("unpaid"),

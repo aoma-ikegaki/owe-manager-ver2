@@ -9,7 +9,7 @@ import clsx from "clsx";
 
 const items = [
   { href: "/home", label: "ホーム", icon: Home },
-  { href: "/history", label: "返済履歴", icon: LayoutList },
+  { href: "/history", label: "履歴", icon: LayoutList },
   { href: "/settings", label: "設定", icon: Settings },
 ];
 
@@ -17,7 +17,7 @@ export function BottomNav() {
   const pathname = usePathname();
 
   return (
-    <nav className="sticky bottom-0 border-t border-slate-200 bg-white">
+    <nav className="shrink-0 border-t border-slate-200 bg-white">
       <div className="mx-auto flex max-w-md items-center justify-around px-4 py-2">
         {items.map((item) => {
           const active = pathname?.startsWith(item.href);
@@ -29,10 +29,10 @@ export function BottomNav() {
               className="flex flex-1 items-center justify-center"
               aria-label={item.label}
             >
-              <div className="flex flex-col items-center gap-1 py-1 text-xs font-medium">
+              <div className="flex flex-col items-center gap-1 py-1 text-sm font-medium">
                 <Icon
                   className={clsx(
-                    "h-5 w-5",
+                    "h-6 w-6",
                     active ? "text-[var(--color-brand)]" : "text-slate-500",
                   )}
                   strokeWidth={2}
