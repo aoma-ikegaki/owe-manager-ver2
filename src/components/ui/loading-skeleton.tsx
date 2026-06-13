@@ -15,7 +15,7 @@ export function Skeleton({
 
 export function SummaryCardSkeleton() {
   return (
-    <div className="rounded-2xl border border-slate-200 bg-white p-3 text-center">
+    <div className="rounded-2xl bg-white px-4 py-3.5 text-center shadow-[0_4px_20px_rgba(15,23,42,0.08)]">
       <Skeleton className="mx-auto h-4 w-12" />
       <Skeleton className="mx-auto mt-2 h-8 w-24" />
       <Skeleton className="mx-auto mt-2 h-3 w-16" />

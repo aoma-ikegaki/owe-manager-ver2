@@ -31,36 +31,37 @@ export default function HomePage() {
 
   return (
     <div className="flex h-full min-h-0 flex-col overflow-hidden bg-slate-50">
-      <header className="shrink-0 bg-white px-5 pb-3 pt-4 shadow-sm">
+      <header className="shrink-0 px-5 pb-1 pt-4">
         <h1 className="text-center text-2xl font-semibold text-slate-900">
           OweManager
         </h1>
-        <div className="mt-2 grid grid-cols-2 gap-2">
-          {showLoading ? (
-            <>
-              <SummaryCardSkeleton />
-              <SummaryCardSkeleton />
-            </>
-          ) : (
-            <>
-              <SummaryCard
-                title="借りた"
-                amount={summaries.borrowed.unpaidAmount}
-                count={summaries.borrowed.unpaidCount}
-                variant="borrowed"
-              />
-              <SummaryCard
-                title="貸した"
-                amount={summaries.lent.unpaidAmount}
-                count={summaries.lent.unpaidCount}
-                variant="lent"
-              />
-            </>
-          )}
-        </div>
       </header>
 
-      <div className="shrink-0 space-y-2 px-5 pt-2">
+      <div className="shrink-0 grid grid-cols-2 gap-3 px-5 pt-2">
+        {showLoading ? (
+          <>
+            <SummaryCardSkeleton />
+            <SummaryCardSkeleton />
+          </>
+        ) : (
+          <>
+            <SummaryCard
+              title="借りた"
+              amount={summaries.borrowed.unpaidAmount}
+              count={summaries.borrowed.unpaidCount}
+              variant="borrowed"
+            />
+            <SummaryCard
+              title="貸した"
+              amount={summaries.lent.unpaidAmount}
+              count={summaries.lent.unpaidCount}
+              variant="lent"
+            />
+          </>
+        )}
+      </div>
+
+      <div className="shrink-0 space-y-2 px-5 pt-3">
         <TabSwitcher value={tab} onChange={setTab} />
       </div>
 
