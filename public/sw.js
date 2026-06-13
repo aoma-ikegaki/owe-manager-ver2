@@ -1,5 +1,15 @@
-const CACHE_NAME = "owemanager-cache-v2";
-const PRECACHE_URLS = ["/manifest.webmanifest"];
+const CACHE_NAME = "owemanager-cache-v3";
+const PRECACHE_URLS = ["/manifest.webmanifest", "/icons/icon-192.png"];
+
+function isStaticAsset(pathname) {
+  return (
+    pathname.startsWith("/_next/static/") ||
+    pathname.startsWith("/icons/") ||
+    pathname === "/manifest.webmanifest" ||
+    pathname === "/icon.svg" ||
+    pathname === "/favicon.ico"
+  );
+}
 
 self.addEventListener("install", (event) => {
   event.waitUntil(
@@ -25,24 +35,22 @@ self.addEventListener("fetch", (event) => {
   if (event.request.method !== "GET") return;
 
   const url = new URL(event.request.url);
-  const isNavigation = event.request.mode === "navigate";
-  const isStaticAsset =
-    url.pathname.startsWith("/_next/static/") ||
-    url.pathname === "/manifest.webmanifest" ||
-    url.pathname === "/icon.svg" ||
-    url.pathname === "/favicon.ico";
-
-  if (isNavigation || !isStaticAsset) return;
+  if (url.origin !== self.location.origin) return;
+  if (event.request.mode === "navigate" || !isStaticAsset(url.pathname)) return;
 
   event.respondWith(
-    caches.match(event.request).then(
-      (cached) =>
-        cached ||
-        fetch(event.request).then((response) => {
+    caches.match(event.request).then((cached) => {
+      const networkFetch = fetch(event.request).then((response) => {
+        if (response.ok) {
           const clone = response.clone();
-          caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
-          return response;
-        }),
-    ),
+          void caches
+            .open(CACHE_NAME)
+            .then((cache) => cache.put(event.request, clone));
+        }
+        return response;
+      });
+
+      return cached ?? networkFetch;
+    }),
   );
 });

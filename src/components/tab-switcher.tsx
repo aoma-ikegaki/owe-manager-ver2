@@ -7,16 +7,10 @@ type Tab = "borrowed" | "lent";
 type TabSwitcherProps = {
   value: Tab;
   onChange: (tab: Tab) => void;
-  onTabIntent?: (tab: Tab) => void;
   className?: string;
 };
 
-export function TabSwitcher({
-  value,
-  onChange,
-  onTabIntent,
-  className,
-}: TabSwitcherProps) {
+export function TabSwitcher({ value, onChange, className }: TabSwitcherProps) {
   return (
     <div
       className={clsx(
@@ -33,9 +27,6 @@ export function TabSwitcher({
       />
       {(["borrowed", "lent"] satisfies Tab[]).map((tab) => {
         const active = value === tab;
-        const prefetchTab = () => {
-          if (!active) onTabIntent?.(tab);
-        };
         return (
           <button
             key={tab}
@@ -47,9 +38,6 @@ export function TabSwitcher({
                 : "text-slate-500 hover:text-slate-700",
             )}
             onClick={() => onChange(tab)}
-            onMouseEnter={prefetchTab}
-            onTouchStart={prefetchTab}
-            onFocus={prefetchTab}
           >
             {tab === "borrowed" ? "借りた" : "貸した"}
           </button>

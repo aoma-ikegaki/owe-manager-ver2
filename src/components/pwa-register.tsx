@@ -7,16 +7,27 @@ export function PwaRegister() {
     if (process.env.NODE_ENV !== "production") return;
     if (!("serviceWorker" in navigator)) return;
 
-    // 古い SW がキャッシュ経由で ERR_FAILED を起こすのを防ぐ
-    void navigator.serviceWorker.getRegistrations().then((registrations) =>
-      Promise.all(registrations.map((registration) => registration.unregister())),
-    );
+    let visibilityHandler: (() => void) | undefined;
 
-    if ("caches" in window) {
-      void caches.keys().then((keys) =>
-        Promise.all(keys.map((key) => caches.delete(key))),
-      );
-    }
+    void navigator.serviceWorker
+      .register("/sw.js", { scope: "/" })
+      .then((registration) => {
+        visibilityHandler = () => {
+          if (document.visibilityState === "visible") {
+            void registration.update();
+          }
+        };
+        document.addEventListener("visibilitychange", visibilityHandler);
+      })
+      .catch((error) => {
+        console.error("Service worker registration failed:", error);
+      });
+
+    return () => {
+      if (visibilityHandler) {
+        document.removeEventListener("visibilitychange", visibilityHandler);
+      }
+    };
   }, []);
 
   return null;

@@ -1,59 +1,32 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { useQueryClient } from "@tanstack/react-query";
-import clsx from "clsx";
 import { DebtCard } from "@/components/debt-card";
 import { Fab } from "@/components/fab";
 import { SummaryCard } from "@/components/summary-card";
 import { TabSwitcher } from "@/components/tab-switcher";
-import type { Debt } from "@/db/schema";
-import type { DebtSummary } from "@/lib/api";
-import { debtListKey } from "@/lib/debts-query-keys";
-import { prefetchDebtList, useDebts } from "@/hooks/use-debts";
+import { useDebts } from "@/hooks/use-debts";
 import {
   DebtListSkeleton,
   SummaryCardSkeleton,
 } from "@/components/ui/loading-skeleton";
 
-const LIST_STATUS = "unpaid" as const;
-
-type DebtListData = { items: Debt[]; summary: DebtSummary };
-
-const emptySummary = (): DebtSummary => ({
-  borrowed: { unpaidAmount: 0, unpaidCount: 0 },
-  lent: { unpaidAmount: 0, unpaidCount: 0 },
-});
-
 export function HomeClient() {
-  const queryClient = useQueryClient();
   const [tab, setTab] = useState<"borrowed" | "lent">("borrowed");
-  const { data, isPending } = useDebts({ type: tab, status: LIST_STATUS });
-
-  const siblingData = queryClient.getQueryData<DebtListData>(
-    debtListKey({
-      type: tab === "borrowed" ? "lent" : "borrowed",
-      status: LIST_STATUS,
-    }),
-  );
-
-  const displayData = data ?? siblingData;
-  const isTabCached = Boolean(
-    queryClient.getQueryData(debtListKey({ type: tab, status: LIST_STATUS })),
-  );
-  const showListLoading = isPending && !displayData;
-  const showHeaderLoading = !displayData && isPending;
+  const { data, isPending } = useDebts({ type: tab, status: "unpaid" });
+  const showLoading = isPending && !data;
 
   const summaries = useMemo(() => {
-    if (!displayData?.summary) return emptySummary();
-    return displayData.summary;
-  }, [displayData]);
+    if (!data?.summary) {
+      return {
+        borrowed: { unpaidAmount: 0, unpaidCount: 0 },
+        lent: { unpaidAmount: 0, unpaidCount: 0 },
+      };
+    }
+    return data.summary;
+  }, [data]);
 
-  const items = displayData?.items ?? [];
-
-  const handleTabIntent = (nextTab: "borrowed" | "lent") => {
-    void prefetchDebtList(queryClient, { type: nextTab, status: LIST_STATUS });
-  };
+  const items = data?.items ?? [];
 
   return (
     <div className="flex h-full min-h-0 flex-col overflow-hidden bg-slate-50">
@@ -62,7 +35,7 @@ export function HomeClient() {
           OweManager
         </h1>
         <div className="mt-2 grid grid-cols-2 gap-2">
-          {showHeaderLoading ? (
+          {showLoading ? (
             <>
               <SummaryCardSkeleton />
               <SummaryCardSkeleton />
@@ -87,22 +60,13 @@ export function HomeClient() {
       </header>
 
       <div className="shrink-0 space-y-2 px-5 pt-2">
-        <TabSwitcher
-          value={tab}
-          onChange={setTab}
-          onTabIntent={handleTabIntent}
-        />
+        <TabSwitcher value={tab} onChange={setTab} />
       </div>
 
       <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 pb-28 pt-2">
-        <div
-          className={clsx(
-            "space-y-3",
-            !isTabCached && !showListLoading && "animate-fade-in",
-          )}
-        >
-          {showListLoading && <DebtListSkeleton showAction />}
-          {!showListLoading &&
+        <div key={tab} className="animate-fade-in space-y-3">
+          {showLoading && <DebtListSkeleton showAction />}
+          {!showLoading &&
             items.map((debt) => (
               <DebtCard
                 key={debt.id}
@@ -114,7 +78,7 @@ export function HomeClient() {
                 type={debt.type}
               />
             ))}
-          {!showListLoading && items.length === 0 && (
+          {!showLoading && items.length === 0 && (
             <p className="text-center text-base text-slate-500">
               まだ{tab === "borrowed" ? "借りた" : "貸した"}記録がありません
             </p>
