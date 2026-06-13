@@ -1,10 +1,18 @@
 type DefaultUserAvatarProps = {
   className?: string;
+  src?: string | null;
+  alt?: string;
 };
 
 export function DefaultUserAvatar({
   className = "flex h-10 w-10 items-center justify-center rounded-full bg-slate-100",
+  src,
+  alt = "",
 }: DefaultUserAvatarProps) {
+  if (src) {
+    return <img src={src} alt={alt} className={className} />;
+  }
+
   return (
     <div aria-hidden className={className}>
       <svg

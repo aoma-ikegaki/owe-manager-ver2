@@ -4,7 +4,6 @@ import { useMemo, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import clsx from "clsx";
 import { DebtCard } from "@/components/debt-card";
-import { DefaultUserAvatar } from "@/components/default-user-avatar";
 import { Fab } from "@/components/fab";
 import { SummaryCard } from "@/components/summary-card";
 import { TabSwitcher } from "@/components/tab-switcher";
@@ -59,12 +58,9 @@ export function HomeClient() {
   return (
     <div className="flex h-full min-h-0 flex-col overflow-hidden bg-slate-50">
       <header className="shrink-0 bg-white px-5 pb-3 pt-4 shadow-sm">
-        <div className="relative flex items-center justify-center">
-          <h1 className="text-2xl font-semibold text-slate-900">
-            OweManager
-          </h1>
-          <DefaultUserAvatar className="absolute right-0 flex h-9 w-9 items-center justify-center rounded-full bg-slate-100" />
-        </div>
+        <h1 className="text-center text-2xl font-semibold text-slate-900">
+          OweManager
+        </h1>
         <div className="mt-2 grid grid-cols-2 gap-2">
           {showHeaderLoading ? (
             <>
