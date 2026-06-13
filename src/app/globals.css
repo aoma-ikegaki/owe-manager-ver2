@@ -66,8 +66,10 @@ a,
     opacity 150ms ease-out;
 }
 
-.btn-primary:hover:not(:disabled) {
-  background: var(--color-brand-strong);
+@media (hover: hover) {
+  .btn-primary:hover:not(:disabled) {
+    background: var(--color-brand-strong);
+  }
 }
 
 .btn-primary:active:not(:disabled) {

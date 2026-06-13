@@ -51,6 +51,60 @@ export function usePrefetchDebtLists(status: DebtQuery["status"]) {
   }, [queryClient, status]);
 }
 
+type DebtListData = { items: Debt[]; summary: DebtSummary };
+
+function updateSummaryAfterCreate(
+  summary: DebtSummary,
+  created: Debt,
+): DebtSummary {
+  if (created.status !== "unpaid") return summary;
+
+  return {
+    ...summary,
+    [created.type]: {
+      unpaidAmount: summary[created.type].unpaidAmount + created.amount,
+      unpaidCount: summary[created.type].unpaidCount + 1,
+    },
+  };
+}
+
+function applyCreatedDebtToList(
+  data: DebtListData | undefined,
+  created: Debt,
+  listType: Debt["type"],
+  listStatus: Debt["status"],
+): DebtListData | undefined {
+  if (!data) return data;
+
+  const summary = updateSummaryAfterCreate(data.summary, created);
+  const shouldAddItem =
+    created.type === listType && created.status === listStatus;
+
+  return {
+    summary,
+    items: shouldAddItem ? [created, ...data.items] : data.items,
+  };
+}
+
+export function updateListCachesAfterCreate(
+  queryClient: QueryClient,
+  created: Debt,
+) {
+  const types = ["borrowed", "lent"] as const;
+  const statuses = ["unpaid", "paid"] as const;
+
+  for (const type of types) {
+    for (const status of statuses) {
+      queryClient.setQueryData<DebtListData>(
+        debtListKey({ type, status }),
+        (current) => applyCreatedDebtToList(current, created, type, status),
+      );
+    }
+  }
+
+  queryClient.setQueryData(debtDetailKey(created.id), created);
+}
+
 export function useDebts(query: DebtQuery = {}) {
   return useQuery<{ items: Debt[]; summary: DebtSummary }>({
     queryKey: debtListKey(query),
@@ -72,8 +126,8 @@ export function useCreateDebt() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: createDebt,
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["debts"] });
+    onSuccess: (created) => {
+      updateListCachesAfterCreate(qc, created);
     },
   });
 }

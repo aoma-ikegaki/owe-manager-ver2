@@ -150,7 +150,7 @@ export function DebtForm({
       <button
         type="submit"
         disabled={loading}
-        className="btn-primary tap-press mt-2 w-full py-3.5 text-lg"
+        className="tap-press mt-2 flex w-full items-center justify-center gap-2 rounded-xl bg-[var(--color-brand)] py-3.5 text-lg font-semibold text-white shadow-md transition hover:bg-[var(--color-brand-strong)] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
       >
         {loading ? (
           <>
