@@ -30,6 +30,11 @@ export function BottomNav() {
     void prefetchDebtList(queryClient, { type: "lent", status: "unpaid" });
   };
 
+  const prefetchHistory = () => {
+    void prefetchDebtList(queryClient, { type: "borrowed", status: "paid" });
+    void prefetchDebtList(queryClient, { type: "lent", status: "paid" });
+  };
+
   return (
     <nav
       className="pointer-events-none fixed inset-x-0 bottom-7 z-30 flex justify-center px-4"
@@ -52,7 +57,11 @@ export function BottomNav() {
             const active = index === activeIndex;
             const Icon = item.icon;
             const prefetch =
-              item.href === "/home" && !active ? prefetchHome : undefined;
+              item.href === "/home" && !active
+                ? prefetchHome
+                : item.href === "/history" && !active
+                  ? prefetchHistory
+                  : undefined;
 
             return (
               <Link

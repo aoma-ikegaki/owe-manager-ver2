@@ -348,11 +348,12 @@ export function useDebts(query: DebtQuery = {}) {
 }
 
 export function useDebt(id: string) {
+  const queryClient = useQueryClient();
   return useQuery<Debt>({
     queryKey: debtDetailKey(id),
     queryFn: () => fetchDebt(id),
     enabled: Boolean(id),
-    placeholderData: (previousData) => previousData,
+    placeholderData: () => findDebtInCaches(queryClient, id),
   });
 }
 

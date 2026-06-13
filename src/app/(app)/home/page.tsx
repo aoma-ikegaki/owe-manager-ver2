@@ -6,7 +6,12 @@ import { DebtCard } from "@/components/debt-card";
 import { Fab } from "@/components/fab";
 import { SummaryCard } from "@/components/summary-card";
 import { TabSwitcher } from "@/components/tab-switcher";
-import { useDebts, usePrefetchDebtLists } from "@/hooks/use-debts";
+import {
+  prefetchDebtList,
+  useDebts,
+  usePrefetchDebtLists,
+} from "@/hooks/use-debts";
+import { useQueryClient } from "@tanstack/react-query";
 import { useSplashPhase } from "@/components/app-splash-provider";
 import {
   DebtListSkeleton,
@@ -18,7 +23,12 @@ export default function HomePage() {
   const { phase } = useSplashPhase();
   const prevTabRef = useRef(tab);
   const [fadeInList, setFadeInList] = useState(false);
+  const queryClient = useQueryClient();
   usePrefetchDebtLists("unpaid");
+
+  const prefetchTab = (nextTab: "borrowed" | "lent") => {
+    void prefetchDebtList(queryClient, { type: nextTab, status: "unpaid" });
+  };
   const { data, isPending } = useDebts({ type: tab, status: "unpaid" });
   const showLoading = phase === "done" && isPending && !data;
 
@@ -77,7 +87,7 @@ export default function HomePage() {
       </div>
 
       <div className="shrink-0 space-y-2 px-5 pt-3">
-        <TabSwitcher value={tab} onChange={setTab} />
+        <TabSwitcher value={tab} onChange={setTab} onPrefetch={prefetchTab} />
       </div>
 
       <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 pb-28 pt-2">
