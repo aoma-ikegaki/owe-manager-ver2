@@ -1,9 +1,9 @@
-const CACHE_NAME = "owemanager-cache-v1";
-const OFFLINE_URLS = ["/", "/home", "/manifest.webmanifest"];
+const CACHE_NAME = "owemanager-cache-v2";
+const PRECACHE_URLS = ["/manifest.webmanifest"];
 
 self.addEventListener("install", (event) => {
   event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => cache.addAll(OFFLINE_URLS)),
+    caches.open(CACHE_NAME).then((cache) => cache.addAll(PRECACHE_URLS)),
   );
   self.skipWaiting();
 });
@@ -24,24 +24,25 @@ self.addEventListener("activate", (event) => {
 self.addEventListener("fetch", (event) => {
   if (event.request.method !== "GET") return;
 
+  const url = new URL(event.request.url);
+  const isNavigation = event.request.mode === "navigate";
+  const isStaticAsset =
+    url.pathname.startsWith("/_next/static/") ||
+    url.pathname === "/manifest.webmanifest" ||
+    url.pathname === "/icon.svg" ||
+    url.pathname === "/favicon.ico";
+
+  if (isNavigation || !isStaticAsset) return;
+
   event.respondWith(
-    caches.match(event.request).then((cached) => {
-      if (cached) return cached;
-      return fetch(event.request)
-        .then((response) => {
+    caches.match(event.request).then(
+      (cached) =>
+        cached ||
+        fetch(event.request).then((response) => {
           const clone = response.clone();
-          caches.open(CACHE_NAME).then((cache) => {
-            cache.put(event.request, clone);
-          });
+          caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
           return response;
-        })
-        .catch(() =>
-          cached ||
-          new Response("オフラインです", {
-            status: 503,
-            statusText: "Offline",
-          }),
-        );
-    }),
+        }),
+    ),
   );
 });
