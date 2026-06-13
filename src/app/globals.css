@@ -134,6 +134,21 @@ a,
   animation: fade-in 200ms ease-out;
 }
 
+@keyframes tab-enter {
+  from {
+    opacity: 0;
+    transform: translateX(var(--tab-enter-from, 8px));
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.animate-tab-enter {
+  animation: tab-enter 220ms ease-out;
+}
+
 @keyframes slide-up {
   from {
     opacity: 0;
