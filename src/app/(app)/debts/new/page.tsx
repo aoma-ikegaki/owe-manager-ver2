@@ -1,6 +1,7 @@
 'use client';
 
-import { Suspense } from "react";
+import { Suspense, useState } from "react";
+import { flushSync } from "react-dom";
 import { useRouter, useSearchParams } from "next/navigation";
 import { DebtForm } from "@/components/forms/debt-form";
 import { PageHeader } from "@/components/page-header";
@@ -14,9 +15,15 @@ function NewDebtPageContent() {
     params.get("type") === "lent" ? "lent" : "borrowed";
 
   const createMutation = useCreateDebt();
+  const [submitting, setSubmitting] = useState(false);
 
   const handleSubmit = (values: DebtInput) => {
-    createMutation.mutate(values);
+    if (submitting) return;
+
+    setSubmitting(true);
+    flushSync(() => {
+      createMutation.mutate(values);
+    });
     router.replace("/home");
   };
 
@@ -29,6 +36,7 @@ function NewDebtPageContent() {
           defaultValues={{ type: defaultType }}
           onSubmit={handleSubmit}
           submitLabel="登録する"
+          loading={submitting}
         />
       </div>
     </div>

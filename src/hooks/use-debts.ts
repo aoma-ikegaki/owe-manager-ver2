@@ -327,6 +327,16 @@ export function updateListCachesAfterCreate(
   queryClient.setQueryData(debtDetailKey(created.id), created);
 }
 
+export function optimisticallyUpdateDebt(
+  queryClient: QueryClient,
+  previous: Debt,
+  payload: Partial<DebtInput>,
+) {
+  const updated = buildOptimisticUpdatedDebt(previous, payload);
+  applyDebtEditToCaches(queryClient, previous, updated);
+  return updated;
+}
+
 export function useDebts(query: DebtQuery = {}) {
   return useQuery<{ items: Debt[]; summary: DebtSummary }>({
     queryKey: debtListKey(query),
@@ -378,8 +388,7 @@ export function useUpdateDebt(id: string) {
 
       const snapshots = snapshotDebtLists(qc);
       const detailSnapshot = qc.getQueryData<Debt>(debtDetailKey(id));
-      const updated = buildOptimisticUpdatedDebt(debt, payload);
-      applyDebtEditToCaches(qc, debt, updated);
+      optimisticallyUpdateDebt(qc, debt, payload);
 
       return { snapshots, detailSnapshot };
     },
