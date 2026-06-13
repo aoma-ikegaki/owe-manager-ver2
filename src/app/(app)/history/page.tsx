@@ -35,6 +35,7 @@ export default function HistoryPage() {
               createdAt={debt.createdAt}
               status={debt.status}
               type={debt.type}
+              detailFrom="history"
             />
           ))}
         {!showLoading && items.length === 0 && (

@@ -15,9 +15,11 @@ export type DebtCardProps = {
   createdAt: Date | string;
   status: "unpaid" | "paid";
   type: "borrowed" | "lent";
+  detailFrom?: "history";
 };
 
 const formatter = new Intl.NumberFormat("ja-JP");
+const CARD_EXIT_DURATION_MS = 240;
 
 export function DebtCard({
   id,
@@ -26,12 +28,16 @@ export function DebtCard({
   createdAt,
   status,
   type,
+  detailFrom,
 }: DebtCardProps) {
   const isBorrowed = type === "borrowed";
   const statusLabel = status === "paid" ? "返済済み" : "未返済";
+  const detailHref =
+    detailFrom === "history" ? `/debts/${id}?from=history` : `/debts/${id}`;
   const updateMutation = useUpdateDebt(id);
   const queryClient = useQueryClient();
   const [justPaid, setJustPaid] = useState(false);
+  const [isExiting, setIsExiting] = useState(false);
 
   const handlePrefetchDetail = () => {
     void prefetchDebtDetail(queryClient, id);
@@ -40,65 +46,79 @@ export function DebtCard({
   const handleMarkPaid = (e: React.MouseEvent<HTMLButtonElement>) => {
     e.preventDefault();
     e.stopPropagation();
+    if (isExiting) return;
+
     setJustPaid(true);
-    updateMutation.mutate({ status: "paid" });
+    setIsExiting(true);
+
+    window.setTimeout(() => {
+      updateMutation.mutate({ status: "paid" });
+    }, CARD_EXIT_DURATION_MS);
+
     window.setTimeout(() => setJustPaid(false), 600);
   };
 
   return (
-    <div className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-white px-4 py-3 shadow-sm transition-colors duration-200">
-      <Link
-        href={`/debts/${id}`}
-        prefetch
-        onMouseEnter={handlePrefetchDetail}
-        onTouchStart={handlePrefetchDetail}
-        onFocus={handlePrefetchDetail}
-        className="tap-press flex min-w-0 flex-1 items-center justify-between rounded-xl transition hover:opacity-80 active:opacity-100"
-      >
-        <div>
-          <p className="text-base font-semibold text-slate-900">{partnerName}</p>
-          <p className="text-sm text-slate-500">
-            {format(new Date(createdAt), "yyyy/MM/dd")}
-          </p>
-        </div>
-        <div className="flex flex-col items-end gap-1">
-          <p
+    <div
+      className={clsx(
+        "card-exit-wrapper overflow-hidden",
+        isExiting && "animate-card-exit",
+      )}
+    >
+      <div className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-white px-4 py-3 shadow-sm transition-colors duration-200">
+        <Link
+          href={detailHref}
+          prefetch
+          onMouseEnter={handlePrefetchDetail}
+          onTouchStart={handlePrefetchDetail}
+          onFocus={handlePrefetchDetail}
+          className="tap-press flex min-w-0 flex-1 items-center justify-between rounded-xl transition hover:opacity-80 active:opacity-100"
+        >
+          <div>
+            <p className="text-base font-semibold text-slate-900">{partnerName}</p>
+            <p className="text-sm text-slate-500">
+              {format(new Date(createdAt), "yyyy/MM/dd")}
+            </p>
+          </div>
+          <div className="flex flex-col items-end gap-1">
+            <p
+              className={clsx(
+                "text-lg font-semibold",
+                isBorrowed ? "text-red-600" : "text-[var(--color-brand)]",
+              )}
+            >
+              ￥{formatter.format(amount)}
+            </p>
+            <div className="flex items-center gap-1 text-sm text-slate-600">
+              {status === "paid" ? (
+                <CheckCircle2 className="h-4 w-4 text-[var(--color-brand)]" />
+              ) : (
+                <Clock3 className="h-4 w-4 text-amber-500" />
+              )}
+              <span>{statusLabel}</span>
+            </div>
+          </div>
+        </Link>
+        {status === "unpaid" && (
+          <button
+            type="button"
+            onClick={handleMarkPaid}
+            aria-label="返済済みにする"
             className={clsx(
-              "text-lg font-semibold",
-              isBorrowed ? "text-red-600" : "text-[var(--color-brand)]",
+              "btn-icon flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-white shadow-sm",
+              justPaid
+                ? "bg-emerald-600"
+                : "bg-[var(--color-brand)] hover:bg-[var(--color-brand-strong)]",
             )}
           >
-            ￥{formatter.format(amount)}
-          </p>
-          <div className="flex items-center gap-1 text-sm text-slate-600">
-            {status === "paid" ? (
-              <CheckCircle2 className="h-4 w-4 text-[var(--color-brand)]" />
+            {justPaid ? (
+              <Check className="animate-pop-in h-5 w-5" strokeWidth={3} />
             ) : (
-              <Clock3 className="h-4 w-4 text-amber-500" />
+              <Check className="h-5 w-5" strokeWidth={3} />
             )}
-            <span>{statusLabel}</span>
-          </div>
-        </div>
-      </Link>
-      {status === "unpaid" && (
-        <button
-          type="button"
-          onClick={handleMarkPaid}
-          aria-label="返済済みにする"
-          className={clsx(
-            "btn-icon flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-white shadow-sm",
-            justPaid
-              ? "bg-emerald-600"
-              : "bg-[var(--color-brand)] hover:bg-[var(--color-brand-strong)]",
-          )}
-        >
-          {justPaid ? (
-            <Check className="animate-pop-in h-5 w-5" strokeWidth={3} />
-          ) : (
-            <Check className="h-5 w-5" strokeWidth={3} />
-          )}
-        </button>
-      )}
+          </button>
+        )}
+      </div>
     </div>
   );
 }

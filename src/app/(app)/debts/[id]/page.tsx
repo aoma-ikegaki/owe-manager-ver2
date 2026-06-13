@@ -1,7 +1,7 @@
 'use client';
 
-import { useMemo, useState, type ReactNode } from "react";
-import { useRouter, useParams } from "next/navigation";
+import { Suspense, useMemo, useState, type ReactNode } from "react";
+import { useRouter, useParams, useSearchParams } from "next/navigation";
 import { Trash } from "lucide-react";
 import { format } from "date-fns";
 import clsx from "clsx";
@@ -25,10 +25,12 @@ function DetailRow({
   );
 }
 
-export default function DebtDetailPage() {
+function DebtDetailPageContent() {
   const params = useParams<{ id: string }>();
+  const searchParams = useSearchParams();
   const router = useRouter();
   const id = params?.id ?? "";
+  const fromHistory = searchParams.get("from") === "history";
   const { data } = useDebt(id);
   const updateMutation = useUpdateDebt(id);
   const deleteMutation = useDeleteDebt(id);
@@ -41,8 +43,14 @@ export default function DebtDetailPage() {
 
   const handleToggleStatus = () => {
     if (!data) return;
+
+    const markingUnpaid = data.status === "paid";
+    if (markingUnpaid && fromHistory) {
+      router.replace("/history");
+    }
+
     updateMutation.mutate({
-      status: data.status === "paid" ? "unpaid" : "paid",
+      status: markingUnpaid ? "unpaid" : "paid",
     });
   };
 
@@ -141,5 +149,20 @@ export default function DebtDetailPage() {
         onCancel={() => setDeleteConfirmOpen(false)}
       />
     </div>
+  );
+}
+
+export default function DebtDetailPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex h-full min-h-0 flex-col overflow-y-auto bg-slate-50 px-5 pb-24 pt-6">
+          <BackButton />
+          <DebtDetailSkeleton />
+        </div>
+      }
+    >
+      <DebtDetailPageContent />
+    </Suspense>
   );
 }

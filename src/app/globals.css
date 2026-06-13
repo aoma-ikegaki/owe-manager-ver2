@@ -149,6 +149,30 @@ a,
   animation: slide-up 220ms ease-out;
 }
 
+.card-exit-wrapper {
+  max-height: 8rem;
+}
+
+@keyframes card-exit {
+  from {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    max-height: 8rem;
+    margin-block: 0;
+  }
+  to {
+    opacity: 0;
+    transform: translateY(-6px) scale(0.96);
+    max-height: 0;
+    margin-block: 0;
+  }
+}
+
+.animate-card-exit {
+  animation: card-exit 240ms ease-out forwards;
+  pointer-events: none;
+}
+
 * {
   scrollbar-width: thin;
   scrollbar-color: #cbd5e1 transparent;
