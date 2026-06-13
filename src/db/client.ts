@@ -8,7 +8,9 @@ if (!connectionString) {
   throw new Error("DATABASE_URL is not set");
 }
 
-const useSsl = process.env.DRIZZLE_SSL === "true";
+const useSsl =
+  process.env.DRIZZLE_SSL === "true" ||
+  /sslmode=require/i.test(connectionString);
 
 const client =
   globalThis.__postgresClient ??
