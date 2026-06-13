@@ -15,7 +15,7 @@ export function LoginForm() {
       <button
         type="button"
         onClick={() => signIn("google", { callbackUrl: "/home" })}
-        className="mt-12 flex w-full items-center justify-center rounded-xl bg-[var(--color-brand)] px-4 py-3.5 text-base font-semibold text-white shadow-md transition hover:bg-[var(--color-brand-strong)] active:scale-[0.99]"
+        className="btn-primary tap-press mt-12 w-full py-3.5 text-base"
       >
         Googleでログイン
       </button>

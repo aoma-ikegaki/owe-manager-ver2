@@ -1,10 +1,12 @@
-'use client';
+"use client";
 
+import { useState } from "react";
 import { Check, CheckCircle2, Clock3 } from "lucide-react";
 import { format } from "date-fns";
 import Link from "next/link";
 import clsx from "clsx";
 import { useUpdateDebt } from "@/hooks/use-debts";
+import { Spinner } from "@/components/ui/spinner";
 
 export type DebtCardProps = {
   id: string;
@@ -28,18 +30,23 @@ export function DebtCard({
   const isBorrowed = type === "borrowed";
   const statusLabel = status === "paid" ? "返済済み" : "未返済";
   const updateMutation = useUpdateDebt(id);
+  const [justPaid, setJustPaid] = useState(false);
 
   const handleMarkPaid = async (e: React.MouseEvent<HTMLButtonElement>) => {
     e.preventDefault();
     e.stopPropagation();
     await updateMutation.mutateAsync({ status: "paid" });
+    setJustPaid(true);
+    window.setTimeout(() => setJustPaid(false), 600);
   };
 
+  const isLoading = updateMutation.isPending;
+
   return (
-    <div className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-white px-4 py-3 shadow-sm">
+    <div className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-white px-4 py-3 shadow-sm transition-colors duration-200">
       <Link
         href={`/debts/${id}`}
-        className="flex min-w-0 flex-1 items-center justify-between transition hover:opacity-80"
+        className="tap-press flex min-w-0 flex-1 items-center justify-between rounded-xl transition hover:opacity-80 active:opacity-100"
       >
         <div>
           <p className="text-base font-semibold text-slate-900">{partnerName}</p>
@@ -70,11 +77,22 @@ export function DebtCard({
         <button
           type="button"
           onClick={handleMarkPaid}
-          disabled={updateMutation.isPending}
+          disabled={isLoading}
           aria-label="返済済みにする"
-          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[var(--color-brand)] text-white transition hover:bg-[var(--color-brand-strong)] active:scale-95 disabled:opacity-60"
+          className={clsx(
+            "btn-icon flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-white shadow-sm",
+            justPaid
+              ? "bg-emerald-600"
+              : "bg-[var(--color-brand)] hover:bg-[var(--color-brand-strong)]",
+          )}
         >
-          <Check className="h-5 w-5" strokeWidth={3} />
+          {isLoading ? (
+            <Spinner className="text-white" />
+          ) : justPaid ? (
+            <Check className="animate-pop-in h-5 w-5" strokeWidth={3} />
+          ) : (
+            <Check className="h-5 w-5" strokeWidth={3} />
+          )}
         </button>
       )}
     </div>

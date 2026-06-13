@@ -29,6 +29,109 @@ a {
   text-decoration: none;
 }
 
+button,
+a,
+[role="button"] {
+  -webkit-tap-highlight-color: transparent;
+}
+
+.tap-press {
+  transition:
+    transform 150ms ease-out,
+    background-color 150ms ease-out,
+    box-shadow 150ms ease-out,
+    opacity 150ms ease-out;
+}
+
+.tap-press:active:not(:disabled) {
+  transform: scale(0.96);
+}
+
+.btn-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  border-radius: 0.75rem;
+  background: var(--color-brand);
+  padding: 0.875rem 1rem;
+  font-size: 1rem;
+  font-weight: 600;
+  color: white;
+  box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+  transition:
+    transform 150ms ease-out,
+    background-color 150ms ease-out,
+    box-shadow 150ms ease-out,
+    opacity 150ms ease-out;
+}
+
+.btn-primary:hover:not(:disabled) {
+  background: var(--color-brand-strong);
+}
+
+.btn-primary:active:not(:disabled) {
+  transform: scale(0.98);
+  box-shadow: 0 2px 4px -2px rgb(0 0 0 / 0.1);
+}
+
+.btn-primary:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.btn-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition:
+    transform 150ms ease-out,
+    background-color 150ms ease-out,
+    opacity 150ms ease-out;
+}
+
+.btn-icon:active:not(:disabled) {
+  transform: scale(0.92);
+}
+
+.btn-icon:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+@keyframes pop-in {
+  0% {
+    transform: scale(0.5);
+    opacity: 0;
+  }
+  70% {
+    transform: scale(1.1);
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+.animate-pop-in {
+  animation: pop-in 300ms ease-out;
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in {
+  animation: fade-in 200ms ease-out;
+}
+
 * {
   scrollbar-width: thin;
   scrollbar-color: #cbd5e1 transparent;

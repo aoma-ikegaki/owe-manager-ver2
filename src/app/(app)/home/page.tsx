@@ -54,7 +54,7 @@ export default function HomePage() {
       </div>
 
       <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 pb-28 pt-2">
-        <div className="space-y-3">
+        <div key={tab} className="animate-fade-in space-y-3">
           {isLoading && (
             <p className="text-center text-base text-slate-500">読み込み中...</p>
           )}

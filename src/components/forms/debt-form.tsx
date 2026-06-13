@@ -4,6 +4,7 @@ import { useState } from "react";
 import { debtInputSchema, type DebtInput } from "@/lib/validation";
 import { toDateInputValue } from "@/lib/date-utils";
 import { TabSwitcher } from "@/components/tab-switcher";
+import { Spinner } from "@/components/ui/spinner";
 type DebtFormProps = {
   defaultValues?: Partial<DebtInput>;
   submitLabel?: string;
@@ -133,7 +134,7 @@ export function DebtForm({
                 key={status}
                 type="button"
                 onClick={() => handleChange("status", status)}
-                className={`flex-1 rounded-xl border px-3 py-3 text-base font-semibold transition ${
+                className={`tap-press flex-1 rounded-xl border px-3 py-3 text-base font-semibold transition ${
                   values.status === status
                     ? "border-[var(--color-brand)] bg-emerald-50 text-[var(--color-brand-strong)]"
                     : "border-slate-200 text-slate-600 hover:bg-slate-50"
@@ -149,9 +150,16 @@ export function DebtForm({
       <button
         type="submit"
         disabled={loading}
-        className="mt-2 w-full rounded-xl bg-[var(--color-brand)] py-3.5 text-lg font-semibold text-white shadow-md transition hover:bg-[var(--color-brand-strong)] disabled:opacity-60"
+        className="btn-primary tap-press mt-2 w-full py-3.5 text-lg"
       >
-        {loading ? "送信中..." : submitLabel}
+        {loading ? (
+          <>
+            <Spinner className="text-white" size="md" />
+            送信中...
+          </>
+        ) : (
+          submitLabel
+        )}
       </button>
     </form>
   );
