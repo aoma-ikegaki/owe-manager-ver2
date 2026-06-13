@@ -5,6 +5,7 @@ import {
   type PropsWithChildren,
   useEffect,
   useRef,
+  useState,
 } from "react";
 import { usePathname } from "next/navigation";
 import clsx from "clsx";
@@ -21,11 +22,10 @@ function getTabIndex(pathname: string | null) {
 
 export function AppFrame({ children }: PropsWithChildren) {
   const pathname = usePathname();
-  const { phase: splashPhase, hideAppChrome } = useSplashPhase();
+  const { phase: splashPhase } = useSplashPhase();
   const tabIndex = getTabIndex(pathname);
   const prevIndexRef = useRef(tabIndex);
-  const skipTabEnter =
-    hideAppChrome || splashPhase === "splash" || splashPhase === "exit";
+  const [tabEnterActive, setTabEnterActive] = useState(false);
 
   const slideFrom =
     tabIndex > prevIndexRef.current
@@ -35,16 +35,21 @@ export function AppFrame({ children }: PropsWithChildren) {
         : "6px";
 
   useEffect(() => {
+    if (splashPhase !== "done") return;
+    if (prevIndexRef.current === tabIndex) return;
+
+    setTabEnterActive(true);
+    const timer = window.setTimeout(() => setTabEnterActive(false), 240);
     prevIndexRef.current = tabIndex;
-  }, [tabIndex]);
+    return () => window.clearTimeout(timer);
+  }, [tabIndex, splashPhase]);
 
   return (
     <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
       <main
-        key={pathname}
         className={clsx(
           "min-h-0 flex-1 overflow-hidden",
-          !skipTabEnter && "animate-tab-enter",
+          tabEnterActive && "animate-tab-enter",
         )}
         style={{ "--tab-enter-from": slideFrom } as CSSProperties}
       >

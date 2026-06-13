@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import Script from "next/script";
 import { Noto_Sans_JP } from "next/font/google";
 import "./globals.css";
 import { Providers } from "./providers";
@@ -42,11 +41,27 @@ export default function RootLayout({
   return (
     <html lang="ja" className={`${notoSans.variable}`} suppressHydrationWarning>
       <head>
-        <link rel="preload" href="/icons/icon-splash.png" as="image" />
+        <link
+          rel="preload"
+          href="/icons/icon-splash.png"
+          as="image"
+          fetchPriority="high"
+        />
         <style
           dangerouslySetInnerHTML={{
             __html: `
               html.app-launch-splash-active, html.app-launch-splash-active body { background: #fff; }
+              html.app-launch-splash-active [data-app-shell] {
+                visibility: hidden;
+                opacity: 0;
+                pointer-events: none;
+              }
+              html.app-launch-splash-reveal [data-app-shell] {
+                visibility: visible;
+                opacity: 1;
+                pointer-events: auto;
+                transition: opacity 320ms ease-out;
+              }
               #app-launch-splash {
                 display: none;
                 position: fixed;
@@ -55,27 +70,29 @@ export default function RootLayout({
                 background: #fff;
               }
               html.app-launch-splash-active #app-launch-splash,
-              #app-launch-splash.is-exiting { display: block; }
+              #app-launch-splash.is-exiting,
+              #app-launch-splash.is-fading { display: block; }
+              .app-splash-stage {
+                position: absolute;
+                top: 50%;
+                left: 50%;
+                width: 10rem;
+                height: 10rem;
+                transform: translate(-50%, -50%);
+                background: url(/icons/icon-splash.png) center / contain no-repeat;
+              }
             `,
+          }}
+        />
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `(function(){try{if(sessionStorage.getItem("owemanager-splash-seen"))return;var p=location.pathname;if(p!=="/home"&&p!=="/")return;document.documentElement.classList.add("app-launch-splash-active");var i=new Image();i.src="/icons/icon-splash.png";}catch(e){}})();`,
           }}
         />
       </head>
       <body className="h-dvh overflow-hidden bg-slate-50 text-slate-900 antialiased">
-        <Script src="/launch-splash-init.js" strategy="beforeInteractive" />
         <div id="app-launch-splash" aria-hidden="true" suppressHydrationWarning>
-          <div className="app-splash-stage">
-            <img
-              src="/icons/icon-splash.png"
-              srcSet="/icons/icon-splash.png 512w"
-              sizes="10rem"
-              className="app-splash-icon"
-              width={160}
-              height={160}
-              alt=""
-              fetchPriority="high"
-              decoding="sync"
-            />
-          </div>
+          <div className="app-splash-stage" role="img" aria-label="OweManager" />
         </div>
         <Providers>
           <PwaRegister />

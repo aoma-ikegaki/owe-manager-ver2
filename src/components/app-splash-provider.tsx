@@ -20,19 +20,16 @@ import { useQueryClient } from "@tanstack/react-query";
 export const SPLASH_SESSION_KEY = "owemanager-splash-seen";
 
 const SPLASH_MIN_MS = 520;
-const SPLASH_EXIT_MS = 420;
+const SPLASH_ICON_EXIT_MS = 420;
+const SPLASH_OVERLAY_FADE_MS = 320;
 
 type SplashPhase = "done" | "splash" | "exit";
 
 type SplashContextValue = {
   phase: SplashPhase;
-  hideAppChrome: boolean;
 };
 
-const SplashContext = createContext<SplashContextValue>({
-  phase: "done",
-  hideAppChrome: false,
-});
+const SplashContext = createContext<SplashContextValue>({ phase: "done" });
 
 export function useSplashPhase() {
   return useContext(SplashContext);
@@ -42,11 +39,21 @@ function syncStaticSplash(phase: SplashPhase) {
   const splash = document.getElementById("app-launch-splash");
 
   if (phase === "exit") {
+    splash?.classList.remove("is-fading", "is-hidden");
     splash?.classList.add("is-exiting");
     return;
   }
 
-  splash?.classList.remove("is-exiting", "is-fading");
+  splash?.classList.remove("is-exiting", "is-fading", "is-hidden");
+}
+
+function hideStaticSplash() {
+  const splash = document.getElementById("app-launch-splash");
+  splash?.classList.add("is-hidden");
+  document.documentElement.classList.remove(
+    "app-launch-splash-active",
+    "app-launch-splash-reveal",
+  );
 }
 
 export function AppSplashProvider({ children }: PropsWithChildren) {
@@ -55,7 +62,6 @@ export function AppSplashProvider({ children }: PropsWithChildren) {
   const queryClient = useQueryClient();
   const initializedRef = useRef(false);
   const [phase, setPhase] = useState<SplashPhase>("done");
-  const [hideAppChrome, setHideAppChrome] = useState(false);
   const [minReady, setMinReady] = useState(false);
   const { isFetched } = useDebts({ type: "borrowed", status: "unpaid" });
 
@@ -69,9 +75,11 @@ export function AppSplashProvider({ children }: PropsWithChildren) {
       !sessionStorage.getItem(SPLASH_SESSION_KEY);
 
     if (!shouldShow) {
-      document.documentElement.classList.remove("app-launch-splash-active");
+      document.documentElement.classList.remove(
+        "app-launch-splash-active",
+        "app-launch-splash-reveal",
+      );
       setPhase("done");
-      setHideAppChrome(false);
       document.body.removeAttribute("data-splash-active");
       syncStaticSplash("done");
       return;
@@ -80,7 +88,6 @@ export function AppSplashProvider({ children }: PropsWithChildren) {
     sessionStorage.setItem(SPLASH_SESSION_KEY, "1");
     document.documentElement.classList.add("app-launch-splash-active");
     setPhase("splash");
-    setHideAppChrome(true);
     document.body.setAttribute("data-splash-active", "");
     syncStaticSplash("splash");
   }, []);
@@ -94,9 +101,11 @@ export function AppSplashProvider({ children }: PropsWithChildren) {
     if (pathname === "/home") return;
 
     setPhase("done");
-    setHideAppChrome(false);
     document.body.removeAttribute("data-splash-active");
-    document.documentElement.classList.remove("app-launch-splash-active");
+    document.documentElement.classList.remove(
+      "app-launch-splash-active",
+      "app-launch-splash-reveal",
+    );
     syncStaticSplash("done");
   }, [pathname, phase]);
 
@@ -122,33 +131,30 @@ export function AppSplashProvider({ children }: PropsWithChildren) {
   useEffect(() => {
     if (phase !== "exit") return;
 
-    const fadeTimer = window.setTimeout(() => {
+    const revealTimer = window.setTimeout(() => {
+      document.documentElement.classList.add("app-launch-splash-reveal");
       document.getElementById("app-launch-splash")?.classList.add("is-fading");
-    }, SPLASH_EXIT_MS - 160);
+    }, SPLASH_ICON_EXIT_MS);
 
     const doneTimer = window.setTimeout(() => {
-      syncStaticSplash("done");
-      document.documentElement.classList.remove("app-launch-splash-active");
+      hideStaticSplash();
       setPhase("done");
 
       window.requestAnimationFrame(() => {
-        setHideAppChrome(false);
-
+        syncStaticSplash("done");
         window.setTimeout(() => {
           document.body.removeAttribute("data-splash-active");
-        }, 320);
+        }, 100);
       });
-    }, SPLASH_EXIT_MS);
+    }, SPLASH_ICON_EXIT_MS + SPLASH_OVERLAY_FADE_MS);
 
     return () => {
-      window.clearTimeout(fadeTimer);
+      window.clearTimeout(revealTimer);
       window.clearTimeout(doneTimer);
     };
   }, [phase]);
 
   return (
-    <SplashContext.Provider value={{ phase, hideAppChrome }}>
-      {children}
-    </SplashContext.Provider>
+    <SplashContext.Provider value={{ phase }}>{children}</SplashContext.Provider>
   );
 }
