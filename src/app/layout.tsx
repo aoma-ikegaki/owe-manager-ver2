@@ -16,6 +16,13 @@ export const metadata: Metadata = {
   description: "友人間の少額の貸し借りをサッと記録するPWA",
   applicationName: "OweManager",
   manifest: "/manifest.webmanifest",
+  icons: {
+    icon: [
+      { url: "/icon.svg", type: "image/svg+xml" },
+      { url: "/icons/icon-192.png", sizes: "192x192", type: "image/png" },
+    ],
+    apple: "/icons/icon-192.png",
+  },
   appleWebApp: {
     capable: true,
     title: "OweManager",

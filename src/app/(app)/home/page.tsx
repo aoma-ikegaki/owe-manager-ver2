@@ -4,14 +4,9 @@ import {
   QueryClient,
 } from "@tanstack/react-query";
 import { auth } from "@/lib/auth";
-import { debtListKey } from "@/lib/debts-query-keys";
-import { fetchDebtsData } from "@/lib/debts-server";
+import { HOME_DEBT_QUERIES } from "@/lib/debts-query-keys";
+import { prefetchDebtsForUser } from "@/lib/debts-server";
 import { HomeClient } from "./home-client";
-
-const homeDebtQueries = [
-  { type: "borrowed", status: "unpaid" },
-  { type: "lent", status: "unpaid" },
-] as const;
 
 export default async function HomePage() {
   const session = await auth();
@@ -24,14 +19,10 @@ export default async function HomePage() {
   });
 
   if (session?.user?.id) {
-    const userId = session.user.id;
-    await Promise.all(
-      homeDebtQueries.map((query) =>
-        queryClient.prefetchQuery({
-          queryKey: debtListKey(query),
-          queryFn: () => fetchDebtsData(userId, query),
-        }),
-      ),
+    await prefetchDebtsForUser(
+      queryClient,
+      session.user.id,
+      HOME_DEBT_QUERIES,
     );
   }
 
