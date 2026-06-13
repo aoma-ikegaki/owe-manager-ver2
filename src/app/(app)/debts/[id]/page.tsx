@@ -172,7 +172,13 @@ function DebtDetailPageContent() {
 
         <button
           type="button"
-          onClick={() => router.push(`/debts/${data.id}/edit`)}
+          onClick={() =>
+            router.push(
+              fromHistory
+                ? `/debts/${data.id}/edit?from=history`
+                : `/debts/${data.id}/edit`,
+            )
+          }
           className="flex w-full items-center justify-center rounded-xl border border-slate-200 px-4 py-3 text-base font-semibold text-slate-800 transition hover:bg-slate-50"
         >
           編集する

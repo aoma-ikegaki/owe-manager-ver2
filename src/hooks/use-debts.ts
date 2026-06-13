@@ -140,25 +140,66 @@ function buildOptimisticUpdatedDebt(
   };
 }
 
+function applySummaryForEdit(
+  summary: DebtSummary,
+  previous: Debt,
+  updated: Debt,
+  query: DebtQuery,
+) {
+  let next = adjustSummaryForUnpaidDebt(summary, previous, -1);
+  if (updated.type === query.type && updated.status === query.status) {
+    next = adjustSummaryForUnpaidDebt(next, updated, 1);
+  }
+  return next;
+}
+
+function deferSummaryUpdate(
+  queryClient: QueryClient,
+  previous: Debt,
+  updated: Debt,
+) {
+  window.requestAnimationFrame(() => {
+    for (const query of debtListQueries) {
+      queryClient.setQueryData<DebtListData>(debtListKey(query), (current) => {
+        if (!current) return current;
+        return {
+          ...current,
+          summary: applySummaryForEdit(current.summary, previous, updated, query),
+        };
+      });
+    }
+  });
+}
+
 function applyDebtEditToCaches(
   queryClient: QueryClient,
   previous: Debt,
   updated: Debt,
 ) {
+  const deferSummary =
+    previous.status === "unpaid" && updated.status === "paid";
+
   for (const query of debtListQueries) {
     queryClient.setQueryData<DebtListData>(debtListKey(query), (current) => {
       if (!current) return current;
 
       let items = current.items.filter((item) => item.id !== previous.id);
-      let summary = adjustSummaryForUnpaidDebt(current.summary, previous, -1);
 
       if (updated.type === query.type && updated.status === query.status) {
         items = [updated, ...items];
       }
-      summary = adjustSummaryForUnpaidDebt(summary, updated, 1);
 
-      return { items, summary };
+      return {
+        items,
+        summary: deferSummary
+          ? current.summary
+          : applySummaryForEdit(current.summary, previous, updated, query),
+      };
     });
+  }
+
+  if (deferSummary) {
+    deferSummaryUpdate(queryClient, previous, updated);
   }
 
   queryClient.setQueryData(debtDetailKey(updated.id), updated);
