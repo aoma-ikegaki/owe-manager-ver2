@@ -96,6 +96,115 @@ function restoreDebtListSnapshots(
   }
 }
 
+function findDebtInCaches(queryClient: QueryClient, id: string): Debt | undefined {
+  const detail = queryClient.getQueryData<Debt>(debtDetailKey(id));
+  if (detail) return detail;
+
+  for (const query of debtListQueries) {
+    const data = queryClient.getQueryData<DebtListData>(debtListKey(query));
+    const found = data?.items.find((item) => item.id === id);
+    if (found) return found;
+  }
+
+  return undefined;
+}
+
+function updateSummaryAfterStatusChange(
+  summary: DebtSummary,
+  debt: Debt,
+  previousStatus: Debt["status"],
+  nextStatus: Debt["status"],
+): DebtSummary {
+  if (previousStatus === nextStatus) return summary;
+
+  const next = {
+    borrowed: { ...summary.borrowed },
+    lent: { ...summary.lent },
+  };
+
+  if (previousStatus === "unpaid" && nextStatus === "paid") {
+    next[debt.type] = {
+      unpaidAmount: Math.max(0, next[debt.type].unpaidAmount - debt.amount),
+      unpaidCount: Math.max(0, next[debt.type].unpaidCount - 1),
+    };
+  } else if (previousStatus === "paid" && nextStatus === "unpaid") {
+    next[debt.type] = {
+      unpaidAmount: next[debt.type].unpaidAmount + debt.amount,
+      unpaidCount: next[debt.type].unpaidCount + 1,
+    };
+  }
+
+  return next;
+}
+
+function applyDebtStatusChangeToCaches(
+  queryClient: QueryClient,
+  debt: Debt,
+  nextStatus: Debt["status"],
+) {
+  const previousStatus = debt.status;
+  if (previousStatus === nextStatus) return;
+
+  const updatedDebt: Debt = {
+    ...debt,
+    status: nextStatus,
+    updatedAt: new Date(),
+  };
+
+  for (const query of debtListQueries) {
+    queryClient.setQueryData<DebtListData>(debtListKey(query), (current) => {
+      if (!current) return current;
+
+      let items = current.items;
+      const matchesType = debt.type === query.type;
+
+      if (matchesType && query.status === previousStatus) {
+        items = items.filter((item) => item.id !== debt.id);
+      }
+      if (matchesType && query.status === nextStatus) {
+        items = items.some((item) => item.id === debt.id)
+          ? items.map((item) => (item.id === debt.id ? updatedDebt : item))
+          : [updatedDebt, ...items];
+      }
+
+      return {
+        items,
+        summary: updateSummaryAfterStatusChange(
+          current.summary,
+          debt,
+          previousStatus,
+          nextStatus,
+        ),
+      };
+    });
+  }
+
+  queryClient.setQueryData(debtDetailKey(debt.id), updatedDebt);
+}
+
+function reconcileDebtInCaches(queryClient: QueryClient, updated: Debt) {
+  for (const query of debtListQueries) {
+    queryClient.setQueryData<DebtListData>(debtListKey(query), (current) => {
+      if (!current?.items.some((item) => item.id === updated.id)) {
+        return current;
+      }
+
+      return {
+        ...current,
+        items: current.items.map((item) =>
+          item.id === updated.id ? updated : item,
+        ),
+      };
+    });
+  }
+
+  queryClient.setQueryData(debtDetailKey(updated.id), updated);
+}
+
+function isStatusOnlyUpdate(payload: Partial<DebtInput>): payload is { status: Debt["status"] } {
+  return payload.status !== undefined && Object.keys(payload).length === 1;
+}
+
 function updateSummaryAfterCreate(
   summary: DebtSummary,
   created: Debt,
@@ -212,9 +321,37 @@ export function useUpdateDebt(id: string) {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (payload: Partial<DebtInput>) => updateDebt(id, payload),
-    onSuccess: () => {
+    onMutate: async (payload) => {
+      if (!isStatusOnlyUpdate(payload)) return undefined;
+
+      const debt = findDebtInCaches(qc, id);
+      if (!debt) return undefined;
+
+      const snapshots = snapshotDebtLists(qc);
+      const detailSnapshot = qc.getQueryData<Debt>(debtDetailKey(id));
+      applyDebtStatusChangeToCaches(qc, debt, payload.status);
+
+      return { snapshots, detailSnapshot };
+    },
+    onSuccess: (updated, payload, context) => {
+      if (isStatusOnlyUpdate(payload) && context) {
+        reconcileDebtInCaches(qc, updated);
+        return;
+      }
+
       qc.invalidateQueries({ queryKey: ["debts"] });
       qc.invalidateQueries({ queryKey: debtDetailKey(id) });
+    },
+    onError: (_error, payload, context) => {
+      if (!isStatusOnlyUpdate(payload) || !context) return;
+
+      restoreDebtListSnapshots(qc, context.snapshots);
+      if (context.detailSnapshot === undefined) {
+        qc.removeQueries({ queryKey: debtDetailKey(id) });
+      } else {
+        qc.setQueryData(debtDetailKey(id), context.detailSnapshot);
+      }
+      window.alert("更新に失敗しました。もう一度お試しください。");
     },
   });
 }

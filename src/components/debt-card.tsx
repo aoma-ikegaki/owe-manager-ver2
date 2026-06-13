@@ -7,7 +7,6 @@ import Link from "next/link";
 import clsx from "clsx";
 import { useQueryClient } from "@tanstack/react-query";
 import { prefetchDebtDetail, useUpdateDebt } from "@/hooks/use-debts";
-import { Spinner } from "@/components/ui/spinner";
 
 export type DebtCardProps = {
   id: string;
@@ -38,15 +37,13 @@ export function DebtCard({
     void prefetchDebtDetail(queryClient, id);
   };
 
-  const handleMarkPaid = async (e: React.MouseEvent<HTMLButtonElement>) => {
+  const handleMarkPaid = (e: React.MouseEvent<HTMLButtonElement>) => {
     e.preventDefault();
     e.stopPropagation();
-    await updateMutation.mutateAsync({ status: "paid" });
     setJustPaid(true);
+    updateMutation.mutate({ status: "paid" });
     window.setTimeout(() => setJustPaid(false), 600);
   };
-
-  const isLoading = updateMutation.isPending;
 
   return (
     <div className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-white px-4 py-3 shadow-sm transition-colors duration-200">
@@ -87,7 +84,6 @@ export function DebtCard({
         <button
           type="button"
           onClick={handleMarkPaid}
-          disabled={isLoading}
           aria-label="返済済みにする"
           className={clsx(
             "btn-icon flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-white shadow-sm",
@@ -96,9 +92,7 @@ export function DebtCard({
               : "bg-[var(--color-brand)] hover:bg-[var(--color-brand-strong)]",
           )}
         >
-          {isLoading ? (
-            <Spinner className="text-white" />
-          ) : justPaid ? (
+          {justPaid ? (
             <Check className="animate-pop-in h-5 w-5" strokeWidth={3} />
           ) : (
             <Check className="h-5 w-5" strokeWidth={3} />

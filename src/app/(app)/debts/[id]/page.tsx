@@ -37,9 +37,9 @@ export default function DebtDetailPage() {
     [data?.status],
   );
 
-  const handleToggleStatus = async () => {
+  const handleToggleStatus = () => {
     if (!data) return;
-    await updateMutation.mutateAsync({
+    updateMutation.mutate({
       status: data.status === "paid" ? "unpaid" : "paid",
     });
   };
