@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Check, CheckCircle2, Clock3 } from "lucide-react";
 import { format } from "date-fns";
 import Link from "next/link";
@@ -19,9 +19,19 @@ export type DebtCardProps = {
 };
 
 const formatter = new Intl.NumberFormat("ja-JP");
-const CHECK_FEEDBACK_MS = 280;
-const CARD_EXIT_DURATION_MS = 400;
+const CHECK_FEEDBACK_MS = 320;
+const COMPLETION_HOLD_MS = 360;
+const CARD_EXIT_DURATION_MS = 380;
+const CARD_FADE_DURATION_MS = 140;
 const EXIT_EASING = "cubic-bezier(0.33, 1, 0.68, 1)";
+
+function measureCollapse(el: HTMLElement): CollapseMetrics {
+  const computed = getComputedStyle(el);
+  return {
+    height: el.offsetHeight,
+    marginTop: Number.parseFloat(computed.marginTop) || 0,
+  };
+}
 
 type CollapseMetrics = {
   height: number;
@@ -45,11 +55,12 @@ export function DebtCard({
   const queryClient = useQueryClient();
   const wrapperRef = useRef<HTMLDivElement>(null);
   const hasMutatedRef = useRef(false);
-  const [justPaid, setJustPaid] = useState(false);
+  const [paidFeedbackActive, setPaidFeedbackActive] = useState(false);
+  const [isPressingCheck, setIsPressingCheck] = useState(false);
   const [isExiting, setIsExiting] = useState(false);
   const [collapseFrom, setCollapseFrom] = useState<CollapseMetrics | null>(null);
   const [collapseActive, setCollapseActive] = useState(false);
-  const showPaidFeedback = justPaid || isExiting;
+  const showPaidFeedback = paidFeedbackActive || isExiting;
 
   const handlePrefetchDetail = () => {
     void prefetchDebtDetail(queryClient, id);
@@ -58,34 +69,28 @@ export function DebtCard({
   const handleMarkPaid = (e: React.MouseEvent<HTMLButtonElement>) => {
     e.preventDefault();
     e.stopPropagation();
-    if (isExiting || justPaid) return;
+    if (isExiting || paidFeedbackActive) return;
 
-    setJustPaid(true);
+    setIsPressingCheck(false);
+    if (typeof navigator !== "undefined" && "vibrate" in navigator) {
+      navigator.vibrate(12);
+    }
+    setPaidFeedbackActive(true);
 
     window.setTimeout(() => {
+      const el = wrapperRef.current;
+      if (!el) return;
+
+      const metrics = measureCollapse(el);
+      setCollapseFrom(metrics);
+      setCollapseActive(false);
       setIsExiting(true);
-    }, CHECK_FEEDBACK_MS);
+
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => setCollapseActive(true));
+      });
+    }, CHECK_FEEDBACK_MS + COMPLETION_HOLD_MS);
   };
-
-  useLayoutEffect(() => {
-    if (!isExiting || !wrapperRef.current) return;
-
-    const el = wrapperRef.current;
-    const computed = getComputedStyle(el);
-    const marginTop = Number.parseFloat(computed.marginTop) || 0;
-
-    setCollapseFrom({
-      height: el.offsetHeight,
-      marginTop,
-    });
-    setCollapseActive(false);
-
-    const frame = requestAnimationFrame(() => {
-      requestAnimationFrame(() => setCollapseActive(true));
-    });
-
-    return () => cancelAnimationFrame(frame);
-  }, [isExiting]);
 
   useEffect(() => {
     if (!collapseActive || hasMutatedRef.current) return;
@@ -127,20 +132,31 @@ export function DebtCard({
           ? {
               height: collapseActive ? 0 : collapseFrom.height,
               marginTop: collapseActive ? 0 : collapseFrom.marginTop,
-              opacity: collapseActive ? 0 : 1,
-              transition: `height ${CARD_EXIT_DURATION_MS}ms ${EXIT_EASING}, margin-top ${CARD_EXIT_DURATION_MS}ms ${EXIT_EASING}, opacity ${CARD_EXIT_DURATION_MS * 0.6}ms ease-out`,
-              pointerEvents: collapseActive ? "none" : undefined,
+              transition: `height ${CARD_EXIT_DURATION_MS}ms ${EXIT_EASING}, margin-top ${CARD_EXIT_DURATION_MS}ms ${EXIT_EASING}`,
+              pointerEvents: "none",
+              contain: "layout",
+              willChange: "height, margin-top",
             }
           : undefined
       }
     >
       <div
         className={clsx(
-          "flex items-center gap-3 rounded-2xl border border-slate-200 bg-white px-4 py-3 shadow-sm",
-          showPaidFeedback
-            ? "border-emerald-200 bg-emerald-50/60"
-            : "transition-colors duration-300",
+          "flex items-center gap-3 rounded-2xl border bg-white px-4 py-3 shadow-sm transition-colors duration-300",
+          paidFeedbackActive && "pointer-events-none border-emerald-200 bg-emerald-50/60 opacity-80",
+          isExiting && "border-emerald-200 bg-emerald-50/60",
+          !showPaidFeedback && "border-slate-200",
         )}
+        style={
+          isCollapsing
+            ? {
+                opacity: collapseActive ? 0 : undefined,
+                transition: collapseActive
+                  ? `opacity ${CARD_FADE_DURATION_MS}ms ease-out`
+                  : undefined,
+              }
+            : undefined
+        }
       >
         <Link
           href={detailHref}
@@ -150,13 +166,15 @@ export function DebtCard({
           onFocus={handlePrefetchDetail}
           className="tap-press flex min-w-0 flex-1 items-center justify-between rounded-xl transition hover:opacity-80 active:opacity-100"
         >
-          <div>
-            <p className="text-base font-semibold text-slate-900">{partnerName}</p>
+          <div className="min-w-0">
+            <p className="truncate text-base font-semibold text-slate-900">
+              {partnerName}
+            </p>
             <p className="text-sm text-slate-500">
               {format(new Date(createdAt), "yyyy/MM/dd")}
             </p>
           </div>
-          <div className="flex flex-col items-end gap-1">
+          <div className="flex shrink-0 flex-col items-end gap-1 pl-2">
             <p
               className={clsx(
                 "text-lg font-semibold",
@@ -185,20 +203,29 @@ export function DebtCard({
           <button
             type="button"
             onClick={handleMarkPaid}
+            onPointerDown={() => {
+              if (isExiting || paidFeedbackActive) return;
+              setIsPressingCheck(true);
+            }}
+            onPointerUp={() => setIsPressingCheck(false)}
+            onPointerLeave={() => setIsPressingCheck(false)}
+            onPointerCancel={() => setIsPressingCheck(false)}
             aria-label="返済済みにする"
+            aria-disabled={paidFeedbackActive || isExiting}
+            tabIndex={isExiting ? -1 : undefined}
+            aria-hidden={isExiting}
             className={clsx(
-              "btn-icon flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-white shadow-sm",
-              justPaid
+              "tap-press btn-icon flex h-10 w-10 shrink-0 touch-manipulation select-none items-center justify-center rounded-full text-white shadow-md transition-[transform,background-color,box-shadow] duration-150",
+              isPressingCheck && !paidFeedbackActive && "scale-[0.88] shadow-sm",
+              paidFeedbackActive || isExiting
                 ? "bg-emerald-600"
                 : "bg-[var(--color-brand)] hover:bg-[var(--color-brand-strong)]",
-              isExiting && "pointer-events-none",
+              paidFeedbackActive && "animate-pop-in ring-2 ring-emerald-300/70 ring-offset-1",
+              (paidFeedbackActive || isExiting) && "pointer-events-none",
+              isExiting && "invisible",
             )}
           >
-            {justPaid ? (
-              <Check className="h-5 w-5" strokeWidth={3} />
-            ) : (
-              <Check className="h-5 w-5" strokeWidth={3} />
-            )}
+            <Check className="h-5 w-5" strokeWidth={3} />
           </button>
         )}
       </div>

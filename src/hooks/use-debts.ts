@@ -159,15 +159,17 @@ function deferSummaryUpdate(
   updated: Debt,
 ) {
   window.requestAnimationFrame(() => {
-    for (const query of debtListQueries) {
-      queryClient.setQueryData<DebtListData>(debtListKey(query), (current) => {
-        if (!current) return current;
-        return {
-          ...current,
-          summary: applySummaryForEdit(current.summary, previous, updated, query),
-        };
-      });
-    }
+    window.requestAnimationFrame(() => {
+      for (const query of debtListQueries) {
+        queryClient.setQueryData<DebtListData>(debtListKey(query), (current) => {
+          if (!current) return current;
+          return {
+            ...current,
+            summary: applySummaryForEdit(current.summary, previous, updated, query),
+          };
+        });
+      }
+    });
   });
 }
 

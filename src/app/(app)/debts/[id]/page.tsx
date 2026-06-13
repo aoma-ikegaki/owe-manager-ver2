@@ -179,7 +179,7 @@ function DebtDetailPageContent() {
                 : `/debts/${data.id}/edit`,
             )
           }
-          className="flex w-full items-center justify-center rounded-xl border border-slate-200 px-4 py-3 text-base font-semibold text-slate-800 transition hover:bg-slate-50"
+          className="tap-press flex w-full items-center justify-center rounded-xl border border-slate-200 px-4 py-3 text-base font-semibold text-slate-800 transition hover:opacity-80 active:opacity-100"
         >
           編集する
         </button>
@@ -187,7 +187,7 @@ function DebtDetailPageContent() {
         <button
           type="button"
           onClick={() => setDeleteConfirmOpen(true)}
-          className="flex w-full items-center justify-center gap-2 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-base font-semibold text-red-700 transition hover:bg-red-100"
+          className="tap-press flex w-full items-center justify-center gap-2 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-base font-semibold text-red-700 transition hover:opacity-80 active:opacity-100"
         >
           <Trash className="h-5 w-5" />
           削除する
