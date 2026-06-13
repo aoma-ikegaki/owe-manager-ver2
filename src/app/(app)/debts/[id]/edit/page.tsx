@@ -12,7 +12,7 @@ export default function EditDebtPage() {
   const params = useParams<{ id: string }>();
   const router = useRouter();
   const id = params?.id ?? "";
-  const { data, isLoading } = useDebt(id);
+  const { data } = useDebt(id);
   const updateMutation = useUpdateDebt(id);
 
   const handleSubmit = async (values: DebtInput) => {
@@ -20,7 +20,7 @@ export default function EditDebtPage() {
     router.replace(`/debts/${id}`);
   };
 
-  if (isLoading || !data) {
+  if (!data) {
     return (
       <div className="h-full overflow-y-auto bg-slate-50 px-5 pb-24 pt-6">
         <BackButton />

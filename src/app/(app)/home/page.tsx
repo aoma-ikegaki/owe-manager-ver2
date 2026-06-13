@@ -6,11 +6,13 @@ import { DefaultUserAvatar } from "@/components/default-user-avatar";
 import { Fab } from "@/components/fab";
 import { SummaryCard } from "@/components/summary-card";
 import { TabSwitcher } from "@/components/tab-switcher";
-import { useDebts } from "@/hooks/use-debts";
+import { useDebts, usePrefetchDebtLists } from "@/hooks/use-debts";
 
 export default function HomePage() {
   const [tab, setTab] = useState<"borrowed" | "lent">("borrowed");
-  const { data, isLoading } = useDebts({ type: tab, status: "unpaid" });
+  usePrefetchDebtLists("unpaid");
+  const { data, isPending } = useDebts({ type: tab, status: "unpaid" });
+  const showLoading = isPending && !data;
 
   const summaries = useMemo(() => {
     if (!data?.summary) {
@@ -55,10 +57,10 @@ export default function HomePage() {
 
       <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 pb-28 pt-2">
         <div key={tab} className="animate-fade-in space-y-3">
-          {isLoading && (
+          {showLoading && (
             <p className="text-center text-base text-slate-500">読み込み中...</p>
           )}
-          {!isLoading &&
+          {!showLoading &&
             items.map((debt) => (
               <DebtCard
                 key={debt.id}
@@ -70,7 +72,7 @@ export default function HomePage() {
                 type={debt.type}
               />
             ))}
-          {!isLoading && items.length === 0 && (
+          {!showLoading && items.length === 0 && (
             <p className="text-center text-base text-slate-500">
               まだ{tab === "borrowed" ? "借りた" : "貸した"}記録がありません
             </p>
