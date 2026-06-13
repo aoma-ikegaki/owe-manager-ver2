@@ -15,6 +15,7 @@ import {
 } from "@/lib/api";
 import type { Debt } from "@/db/schema";
 import type { DebtInput, DebtQuery } from "@/lib/validation";
+import { parseDateInput } from "@/lib/date-utils";
 
 export const debtListKey = (query?: DebtQuery) => [
   "debts",
@@ -53,6 +54,48 @@ export function usePrefetchDebtLists(status: DebtQuery["status"]) {
 
 type DebtListData = { items: Debt[]; summary: DebtSummary };
 
+const emptyDebtSummary = (): DebtSummary => ({
+  borrowed: { unpaidAmount: 0, unpaidCount: 0 },
+  lent: { unpaidAmount: 0, unpaidCount: 0 },
+});
+
+const debtListQueries = [
+  { type: "borrowed", status: "unpaid" },
+  { type: "borrowed", status: "paid" },
+  { type: "lent", status: "unpaid" },
+  { type: "lent", status: "paid" },
+] as const satisfies DebtQuery[];
+
+function buildOptimisticDebt(input: DebtInput): Debt {
+  const now = new Date();
+  return {
+    id: `optimistic-${crypto.randomUUID()}`,
+    userId: "",
+    partnerName: input.partnerName,
+    amount: input.amount,
+    type: input.type,
+    status: input.status ?? "unpaid",
+    createdAt: parseDateInput(input.occurredOn),
+    updatedAt: now,
+  };
+}
+
+function snapshotDebtLists(queryClient: QueryClient) {
+  return debtListQueries.map((query) => ({
+    key: debtListKey(query),
+    data: queryClient.getQueryData<DebtListData>(debtListKey(query)),
+  }));
+}
+
+function restoreDebtListSnapshots(
+  queryClient: QueryClient,
+  snapshots: ReturnType<typeof snapshotDebtLists>,
+) {
+  for (const { key, data } of snapshots) {
+    queryClient.setQueryData(key, data);
+  }
+}
+
 function updateSummaryAfterCreate(
   summary: DebtSummary,
   created: Debt,
@@ -73,33 +116,52 @@ function applyCreatedDebtToList(
   created: Debt,
   listType: Debt["type"],
   listStatus: Debt["status"],
-): DebtListData | undefined {
-  if (!data) return data;
-
-  const summary = updateSummaryAfterCreate(data.summary, created);
+): DebtListData {
+  const base = data ?? { items: [], summary: emptyDebtSummary() };
+  const summary = updateSummaryAfterCreate(base.summary, created);
   const shouldAddItem =
     created.type === listType && created.status === listStatus;
 
   return {
     summary,
-    items: shouldAddItem ? [created, ...data.items] : data.items,
+    items: shouldAddItem ? [created, ...base.items] : base.items,
   };
+}
+
+function replaceOptimisticDebtInCaches(
+  queryClient: QueryClient,
+  optimisticId: string,
+  created: Debt,
+) {
+  for (const query of debtListQueries) {
+    queryClient.setQueryData<DebtListData>(debtListKey(query), (current) => {
+      if (!current?.items.some((item) => item.id === optimisticId)) {
+        return current;
+      }
+
+      return {
+        ...current,
+        items: current.items.map((item) =>
+          item.id === optimisticId ? created : item,
+        ),
+      };
+    });
+  }
+
+  queryClient.removeQueries({ queryKey: debtDetailKey(optimisticId) });
+  queryClient.setQueryData(debtDetailKey(created.id), created);
 }
 
 export function updateListCachesAfterCreate(
   queryClient: QueryClient,
   created: Debt,
 ) {
-  const types = ["borrowed", "lent"] as const;
-  const statuses = ["unpaid", "paid"] as const;
-
-  for (const type of types) {
-    for (const status of statuses) {
-      queryClient.setQueryData<DebtListData>(
-        debtListKey({ type, status }),
-        (current) => applyCreatedDebtToList(current, created, type, status),
-      );
-    }
+  for (const query of debtListQueries) {
+    queryClient.setQueryData<DebtListData>(
+      debtListKey(query),
+      (current) =>
+        applyCreatedDebtToList(current, created, query.type, query.status),
+    );
   }
 
   queryClient.setQueryData(debtDetailKey(created.id), created);
@@ -126,8 +188,22 @@ export function useCreateDebt() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: createDebt,
-    onSuccess: (created) => {
-      updateListCachesAfterCreate(qc, created);
+    onMutate: async (input) => {
+      const optimistic = buildOptimisticDebt(input);
+      const snapshots = snapshotDebtLists(qc);
+      updateListCachesAfterCreate(qc, optimistic);
+      qc.setQueryData(debtDetailKey(optimistic.id), optimistic);
+      return { optimisticId: optimistic.id, snapshots };
+    },
+    onSuccess: (created, _input, context) => {
+      if (!context) return;
+      replaceOptimisticDebtInCaches(qc, context.optimisticId, created);
+    },
+    onError: (_error, _input, context) => {
+      if (!context) return;
+      restoreDebtListSnapshots(qc, context.snapshots);
+      qc.removeQueries({ queryKey: debtDetailKey(context.optimisticId) });
+      window.alert("登録に失敗しました。もう一度お試しください。");
     },
   });
 }

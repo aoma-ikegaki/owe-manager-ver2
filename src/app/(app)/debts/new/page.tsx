@@ -15,8 +15,8 @@ function NewDebtPageContent() {
 
   const createMutation = useCreateDebt();
 
-  const handleSubmit = async (values: DebtInput) => {
-    await createMutation.mutateAsync(values);
+  const handleSubmit = (values: DebtInput) => {
+    createMutation.mutate(values);
     router.replace("/home");
   };
 
@@ -28,7 +28,6 @@ function NewDebtPageContent() {
         <DebtForm
           defaultValues={{ type: defaultType }}
           onSubmit={handleSubmit}
-          loading={createMutation.isPending}
           submitLabel="登録する"
         />
       </div>
