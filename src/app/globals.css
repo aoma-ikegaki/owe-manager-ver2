@@ -149,6 +149,14 @@ a,
   animation: tab-enter 220ms ease-out;
 }
 
+body[data-splash-active] .animate-tab-enter {
+  animation: none;
+}
+
+body[data-splash-active] .animate-fade-in {
+  animation: none;
+}
+
 @keyframes slide-up {
   from {
     opacity: 0;

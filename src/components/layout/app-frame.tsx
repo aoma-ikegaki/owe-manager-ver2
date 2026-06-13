@@ -7,7 +7,9 @@ import {
   useRef,
 } from "react";
 import { usePathname } from "next/navigation";
+import clsx from "clsx";
 import { BottomNav } from "./bottom-nav";
+import { useSplashPhase } from "@/components/app-splash-provider";
 
 const tabRoots = ["/home", "/history", "/settings"] as const;
 
@@ -19,8 +21,10 @@ function getTabIndex(pathname: string | null) {
 
 export function AppFrame({ children }: PropsWithChildren) {
   const pathname = usePathname();
+  const { phase: splashPhase } = useSplashPhase();
   const tabIndex = getTabIndex(pathname);
   const prevIndexRef = useRef(tabIndex);
+  const skipTabEnter = splashPhase === "splash" || splashPhase === "exit";
 
   const slideFrom =
     tabIndex > prevIndexRef.current
@@ -37,7 +41,10 @@ export function AppFrame({ children }: PropsWithChildren) {
     <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
       <main
         key={pathname}
-        className="min-h-0 flex-1 overflow-hidden animate-tab-enter"
+        className={clsx(
+          "min-h-0 flex-1 overflow-hidden",
+          !skipTabEnter && "animate-tab-enter",
+        )}
         style={{ "--tab-enter-from": slideFrom } as CSSProperties}
       >
         {children}
