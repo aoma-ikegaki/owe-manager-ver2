@@ -1,3 +1,5 @@
+"use client";
+
 import {
   Home,
   LayoutList,
@@ -5,16 +7,24 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useQueryClient } from "@tanstack/react-query";
 import clsx from "clsx";
+import { prefetchDebtList } from "@/hooks/use-debts";
 
 const items = [
   { href: "/home", label: "ホーム", icon: Home },
   { href: "/history", label: "履歴", icon: LayoutList },
   { href: "/settings", label: "設定", icon: Settings },
-];
+] as const;
 
 export function BottomNav() {
   const pathname = usePathname();
+  const queryClient = useQueryClient();
+
+  const prefetchHome = () => {
+    void prefetchDebtList(queryClient, { type: "borrowed", status: "unpaid" });
+    void prefetchDebtList(queryClient, { type: "lent", status: "unpaid" });
+  };
 
   return (
     <nav className="pointer-events-none fixed inset-x-0 bottom-7 z-30 flex justify-center px-4">
@@ -23,12 +33,18 @@ export function BottomNav() {
           {items.map((item) => {
             const active = pathname?.startsWith(item.href);
             const Icon = item.icon;
+            const prefetch =
+              item.href === "/home" && !active ? prefetchHome : undefined;
+
             return (
               <Link
                 key={item.href}
                 href={item.href}
                 className="tap-press flex min-h-8 flex-1 items-center justify-center rounded-xl"
                 aria-label={item.label}
+                onMouseEnter={prefetch}
+                onTouchStart={prefetch}
+                onFocus={prefetch}
               >
                 <Icon
                   className={clsx(
