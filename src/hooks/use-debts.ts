@@ -16,14 +16,9 @@ import {
 import type { Debt } from "@/db/schema";
 import type { DebtInput, DebtQuery } from "@/lib/validation";
 import { parseDateInput } from "@/lib/date-utils";
+import { debtDetailKey, debtListKey } from "@/lib/debts-query-keys";
 
-export const debtListKey = (query?: DebtQuery) => [
-  "debts",
-  query?.type ?? "all",
-  query?.status ?? "all",
-];
-
-export const debtDetailKey = (id: string) => ["debt", id] as const;
+export { debtDetailKey, debtListKey };
 
 export function prefetchDebtList(
   queryClient: QueryClient,

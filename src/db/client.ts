@@ -16,13 +16,12 @@ const client =
   globalThis.__postgresClient ??
   postgres(connectionString, {
     ssl: useSsl ? "require" : undefined,
+    max: 1,
   });
 
-export const db = drizzle(client, { schema });
+globalThis.__postgresClient = client;
 
-if (process.env.NODE_ENV !== "production") {
-  globalThis.__postgresClient = client;
-}
+export const db = drizzle(client, { schema });
 
 declare global {
   // eslint-disable-next-line no-var
